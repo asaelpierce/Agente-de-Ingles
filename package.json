@@ -1,0 +1,5 @@
+{
+  "name": "tech-english-coach",
+  "private": true,
+  "engines": { "node": "22.x" }
+}

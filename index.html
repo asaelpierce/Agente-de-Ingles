@@ -1,0 +1,553 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tech English Coach</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #f2f4f8; --surface: #ffffff; --surface-2: #e8ecf3; --fg: #182033; --muted: #5b6579; --line: #d3d9e4;
+  --accent: #1259c3; --accent-fg: #ffffff; --accent-soft: #e2ecfb;
+  --good: #1f7a4d; --good-soft: #dff3e8; --warn: #a2620a; --warn-soft: #fbeedb; --live: #c6283c; --live-soft: #fde3e6;
+  --me: #1259c3; --me-fg: #ffffff;
+  --font-body: "IBM Plex Sans", "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141c; --surface: #171e29; --surface-2: #212a38; --fg: #e8edf5; --muted: #98a3b8; --line: #2d3748;
+    --accent: #5b9bff; --accent-fg: #0b1220; --accent-soft: #1b2b48;
+    --good: #5ad28f; --good-soft: #163324; --warn: #f0b35a; --warn-soft: #3a2a10; --live: #ff6b7d; --live-soft: #3d1a20;
+    --me: #2f6fe0; --me-fg: #ffffff; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; }
+button { font: inherit; cursor: pointer; }
+button:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+[hidden] { display: none !important; }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+header.top { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+header.top h1 { font-size: 17px; font-weight: 600; }
+header.top h1 span { font-family: var(--font-mono); color: var(--accent); font-weight: 500; }
+.modes { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
+.mode { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
+.mode[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.settings { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.settings select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
+
+main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px; }
+@media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } aside.notes { display: none; } }
+section.chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.scenario-bar { padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-bottom: 1px solid var(--line); background: var(--surface); }
+.chip { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
+.chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+
+.log { flex: 1; min-height: 0; overflow-y: auto; padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-direction: column; gap: 14px; }
+.msg { max-width: 68ch; display: flex; flex-direction: column; gap: 6px; }
+.msg.me { align-self: flex-end; align-items: flex-end; }
+.bubble { padding: 10px 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg.me .bubble { background: var(--me); color: var(--me-fg); border-color: var(--me); }
+.msg.coach .bubble { border-top-left-radius: 2px; }
+.who { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+.tools { display: flex; flex-wrap: wrap; gap: 6px; }
+.tools button { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 6px; padding: 3px 9px; font-size: 12px; }
+.tools button:hover { background: var(--surface-2); }
+.pt { font-size: 13px; color: var(--muted); padding: 6px 10px; border-left: 3px solid var(--line); }
+.card { border-radius: var(--radius); padding: 10px 12px; font-size: 13.5px; display: flex; flex-direction: column; gap: 4px; max-width: 68ch; }
+.card.fix { background: var(--warn-soft); border: 1px solid var(--warn); }
+.card.ok { background: var(--good-soft); border: 1px solid var(--good); }
+.card.tip { background: var(--accent-soft); border: 1px solid var(--accent); }
+.card .label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.card.fix .label { color: var(--warn); } .card.ok .label { color: var(--good); } .card.tip .label { color: var(--accent); }
+.card s { opacity: .7; } .card b { font-weight: 600; }
+.thinking { color: var(--muted); font-style: italic; }
+.interim { color: var(--muted); font-style: italic; align-self: flex-end; max-width: 68ch; }
+.vocab { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; }
+.term { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.term .en { font-weight: 600; font-size: 16px; }
+.term .ipa { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+.term .pt { border: 0; padding: 0; }
+.term .ex { font-size: 13px; }
+.term .note { font-size: 13px; color: var(--warn); }
+.quiz { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; max-width: 68ch; }
+.quiz .opts { display: flex; flex-direction: column; gap: 6px; }
+.quiz .opts button { text-align: left; border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 6px; padding: 8px 10px; }
+.quiz .opts button.right { background: var(--good-soft); border-color: var(--good); }
+.quiz .opts button.wrong { background: var(--warn-soft); border-color: var(--warn); }
+.quiz .opts button:disabled { cursor: default; }
+.quiz .why { font-size: 13px; color: var(--muted); }
+.starters { display: flex; flex-wrap: wrap; gap: 6px; }
+.starters button { border: 1px dashed var(--line); background: transparent; color: var(--fg); border-radius: 6px; padding: 6px 10px; font-size: 13px; }
+.starters button:hover { background: var(--surface-2); }
+.empty { color: var(--muted); max-width: 60ch; display: flex; flex-direction: column; gap: 10px; }
+.empty h2 { color: var(--fg); font-size: 18px; font-weight: 600; }
+
+footer.composer { border-top: 1px solid var(--line); background: var(--surface); padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; padding-bottom: max(10px, env(safe-area-inset-bottom, 0px)); display: flex; flex-direction: column; gap: 8px; }
+.row { display: flex; gap: 8px; align-items: flex-end; }
+textarea { flex: 1; min-width: 0; resize: none; font: inherit; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--bg); color: var(--fg); min-height: 44px; max-height: 140px; }
+.send { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: var(--radius); padding: 0 16px; height: 44px; font-weight: 600; }
+.send:disabled, .call:disabled { opacity: .5; cursor: default; }
+.call { height: 44px; min-width: 0; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 0 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.call .dot { flex: none; }
+.statusrow { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.ghost.small { font-size: 12px; padding: 3px 8px; white-space: nowrap; }
+@media (max-width: 600px) {
+  .row { flex-wrap: wrap; }
+  .call { width: 100%; justify-content: center; }
+  textarea, select, input { font-size: 16px; } /* iOS zooms on focus below 16px */
+}
+@media (min-width: 861px) { .ghost.small { display: none; } }
+.call[aria-pressed="true"] { background: var(--live-soft); border-color: var(--live); color: var(--live); }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--muted); }
+.call[aria-pressed="true"] .dot { background: var(--live); }
+.call[data-state="listening"] .dot { animation: pulse 1.1s infinite; }
+.call[data-state="speaking"] .dot { background: var(--accent); animation: blink .6s infinite alternate; }
+.call[data-state="thinking"] .dot { background: var(--warn); }
+@media (prefers-reduced-motion: reduce) { .dot { animation: none !important; } }
+@keyframes pulse { 50% { box-shadow: 0 0 0 6px var(--live-soft); } }
+@keyframes blink { to { opacity: .3; } }
+.status { font-size: 12px; color: var(--muted); min-height: 1.2em; }
+.status.err { color: var(--warn); }
+
+aside.notes { border-left: 1px solid var(--line); background: var(--surface); padding-block: 16px; padding-left: 16px; padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow-y: auto; display: flex; flex-direction: column; gap: 16px; font-size: 13.5px; }
+aside.notes h2 { font-size: 13px; font-weight: 600; }
+aside .stat { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; padding: 4px 0; border-bottom: 1px solid var(--line); }
+aside ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+aside .saved { display: flex; flex-direction: column; gap: 4px; }
+aside .saved div { display: flex; justify-content: space-between; gap: 8px; cursor: pointer; }
+aside .saved span.en { font-weight: 500; }
+aside .saved span.ptw { color: var(--muted); }
+.ghost { border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 6px; padding: 5px 10px; font-size: 13px; }
+
+.gate { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; padding: 16px; z-index: 20; }
+.gate form { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; max-width: 380px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.gate input { font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+.gate p { margin: 0; color: var(--muted); font-size: 13.5px; }
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate" hidden>
+  <form id="gateForm">
+    <h2>Tech English Coach</h2>
+    <p>Digite o código de acesso para usar o coach.</p>
+    <input id="gateCode" type="password" placeholder="Código de acesso" autocomplete="current-password" aria-label="Código de acesso">
+    <button class="send" type="submit">Entrar</button>
+    <p id="gateErr" class="status err"></p>
+  </form>
+</div>
+
+<header class="top">
+  <h1><span>&gt;_</span> Tech English Coach</h1>
+  <div class="modes" aria-label="Modo de prática">
+    <button class="mode" data-mode="chat" aria-pressed="true">Conversa</button>
+    <button class="mode" data-mode="sim" aria-pressed="false">Simulação</button>
+    <button class="mode" data-mode="vocab" aria-pressed="false">Vocabulário</button>
+    <button class="mode" data-mode="gram" aria-pressed="false">Gramática</button>
+  </div>
+  <div class="settings">
+    <label for="level">Nível</label>
+    <select id="level"><option value="A1">A1 iniciante</option><option value="A2" selected>A2 básico</option><option value="B1">B1 intermediário</option></select>
+    <label for="voiceKind">Voz</label>
+    <select id="voiceKind"><option value="natural" selected>natural (IA)</option><option value="browser">do navegador</option></select>
+    <label for="rate">Velocidade</label>
+    <select id="rate"><option value="0.8">lenta</option><option value="0.95" selected>normal</option><option value="1.1">rápida</option></select>
+    <label for="auto">Ler respostas</label>
+    <select id="auto"><option value="1" selected>sim</option><option value="0">não</option></select>
+  </div>
+</header>
+
+<main>
+  <section class="chat">
+    <div class="scenario-bar" id="scenarios" hidden></div>
+    <div class="log" id="log" aria-live="polite"></div>
+    <footer class="composer">
+      <div class="row">
+        <button class="call" id="call" aria-pressed="false" data-state="idle"><span class="dot"></span><span id="callLabel">Conversar por voz</span></button>
+        <textarea id="input" rows="1" placeholder="Ou escreva em inglês (pode misturar português se travar)..." aria-label="Sua mensagem"></textarea>
+        <button class="send" id="send">Enviar</button>
+      </div>
+      <div class="statusrow"><div class="status" id="status"></div><button class="ghost small" id="reset2">Nova conversa</button></div>
+    </footer>
+  </section>
+
+  <aside class="notes">
+    <div>
+      <h2>Sessão de hoje</h2>
+      <div class="stat"><span>Mensagens</span><span id="stMsgs">0</span></div>
+      <div class="stat"><span>Correções</span><span id="stFix">0</span></div>
+      <div class="stat"><span>Acertos no quiz</span><span id="stQuiz">0 / 0</span></div>
+    </div>
+    <div>
+      <h2>Palavras salvas</h2>
+      <div class="saved" id="saved"></div>
+    </div>
+    <div>
+      <h2>Como usar</h2>
+      <ul>
+        <li><b>Conversar por voz</b>: clique uma vez, fale em inglês e espere. O coach responde falando e volta a te ouvir. Clique de novo para encerrar.</li>
+        <li>Use Chrome ou Edge para o microfone funcionar.</li>
+        <li><b>PT</b> mostra a tradução; tente entender antes de abrir.</li>
+        <li>Erros aparecem em laranja com explicação em português.</li>
+        <li>Pode falar em português quando travar: o coach ensina como dizer em inglês.</li>
+      </ul>
+      <button class="ghost" id="reset" style="margin-top:8px">Nova conversa</button>
+    </div>
+  </aside>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+  const log = $("#log"), input = $("#input"), sendBtn = $("#send"), callBtn = $("#call"), callLabel = $("#callLabel"), status = $("#status");
+  const scenariosBar = $("#scenarios");
+  let mode = "chat", scenario = null, turns = [], busy = false, ctl = null;
+  let callActive = false, speaking = false, interimEl = null;
+  const stats = { msgs: 0, fix: 0, quizOk: 0, quizN: 0 };
+  let saved = [], code = "";
+  try { saved = JSON.parse(localStorage.getItem("tec_saved") || "[]"); code = localStorage.getItem("tec_code") || ""; } catch (e) {}
+
+  const SCENARIOS = {
+    sim: [
+      ["standup", "Daily standup", "You are my teammate in a daily standup. Ask what I did yesterday, what I will do today, and if I have blockers."],
+      ["bug", "Reportar um bug", "You are a developer on my team. I need to describe a bug I found in our system. Ask questions to understand it."],
+      ["vendor", "Call com fornecedor", "You are a support engineer from a software vendor (cloud/ERP). I am a customer calling about a problem or a quote."],
+      ["interview", "Entrevista de emprego", "You are an interviewer for a developer / IT automation position. Ask me about my experience, one question at a time."],
+      ["explain", "Explicar um sistema", "You are a non-technical manager. I need to explain how a system or automation I built works."],
+      ["review", "Code review", "You are a senior developer reviewing my pull request. Discuss changes, naming, tests, and ask me to justify decisions."],
+      ["smalltalk", "Small talk no escritório", "You are a colleague from the US office. Make small talk before a meeting: weekend, weather, coffee, projects."]
+    ],
+    gram: [
+      ["present", "Presente simples", "Present simple for daily tasks (I deploy, she tests, the server runs)."],
+      ["past", "Passado simples", "Past simple for reporting work done (I fixed, we deployed, it failed)."],
+      ["future", "Futuro (will / going to)", "Future with will and going to for plans and promises in projects."],
+      ["questions", "Fazer perguntas", "Forming questions: do/does/did, wh-questions, can/could for requests."],
+      ["prep", "Preposições", "Prepositions in tech contexts: on the server, in the database, at 9am, by Friday."],
+      ["pron", "Pronúncia", "Pronunciation of hard tech words for Brazilians: th, final -ed, schedule, variable, queue, cache, library, height, focus."]
+    ]
+  };
+  const VOCAB_TOPICS = [["deploy", "Deploy e infraestrutura"], ["bugs", "Bugs e debugging"], ["meetings", "Reuniões e prazos"], ["code", "Código e versionamento"], ["db", "Banco de dados e APIs"], ["auto", "Automação e integrações"], ["support", "Suporte e tickets"], ["career", "Carreira e entrevistas"]];
+
+  const BASE_RULES = () => `You are "Tech English Coach", a patient English tutor for a Brazilian IT professional (software development, automation, systems). The student's level is ${$("#level").value} (CEFR). Their native language is Brazilian Portuguese. The student may be SPEAKING to you through speech recognition, so their text can contain transcription mistakes: interpret generously and do not correct obvious transcription errors.
+
+Rules:
+- Write in simple, natural spoken English. Short sentences. For A1 use very basic words and at most 25 words per reply; for A2 basic words plus common tech terms, at most 40 words; for B1 natural workplace English, at most 50 words.
+- Use real IT vocabulary and situations (deploy, bug, server, database, API, meeting, deadline, ticket, pull request, automation).
+- Keep the conversation going: the LAST sentence of your reply is ONE question or prompt for the student.
+- If the student writes or speaks in Portuguese or mixes languages, teach them how to say it in English and continue in English.
+- Correct mistakes gently. Only mention the 1-2 most important mistakes per message. Never correct punctuation, capitalization, sentence boundaries or small transcription slips: speech transcripts have none of those.
+- When you give a correction, ask the student to say the corrected sentence once (that is your question for that turn).
+- Messages that start with "[app]" come from the app, not from the student: follow them, and never correct or praise them.
+- Explanations for the student are ALWAYS in Brazilian Portuguese.
+- The "reply" will be read aloud by text-to-speech: no emojis, no lists, no markdown.
+
+Always answer with ONLY one JSON object, no markdown, in this exact shape:
+{"reply": "your English reply", "reply_pt": "Portuguese translation of reply", "correction": null or {"original": "the wrong part the student said", "fixed": "the corrected English", "why_pt": "short explanation in Portuguese"}, "tip_pt": "optional short tip in Portuguese about vocabulary, grammar or pronunciation from this exchange, or empty string", "praise_pt": "if the student did something well, one short compliment in Portuguese naming what was good, else empty string"}`;
+
+  function modeRules() {
+    if (mode === "sim") { const s = SCENARIOS.sim.find(x => x[0] === scenario) || SCENARIOS.sim[0]; return BASE_RULES() + `\n\nMode: role-play simulation. Scenario: ${s[2]} Stay in character. Begin the scene with your first line.`; }
+    if (mode === "gram") { const s = SCENARIOS.gram.find(x => x[0] === scenario) || SCENARIOS.gram[0]; return BASE_RULES() + `\n\nMode: grammar and pronunciation coaching. Topic: ${s[2]} Teach with tiny examples from IT work, then ask the student to try one sentence. In "tip_pt" give the rule in Portuguese. For pronunciation, describe mouth position in Portuguese and compare with Portuguese sounds.`; }
+    return BASE_RULES() + `\n\nMode: free conversation about the student's work in IT. Start by asking about their day or current project.`;
+  }
+
+  // ---------- helpers ----------
+  function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  function scrollDown() { log.scrollTop = log.scrollHeight; }
+  function setStatus(t, err) { status.textContent = t || ""; status.classList.toggle("err", !!err); }
+  function bump() { $("#stMsgs").textContent = stats.msgs; $("#stFix").textContent = stats.fix; $("#stQuiz").textContent = stats.quizOk + " / " + stats.quizN; }
+  function parseJSON(text) {
+    try { return JSON.parse(text); } catch (e) {}
+    const m = text.match(/```(?:json)?\s*([\s\S]*?)```/); if (m) { try { return JSON.parse(m[1]); } catch (e) {} }
+    const a = text.indexOf("{"), b = text.lastIndexOf("}"); if (a >= 0 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch (e) {} }
+    return null;
+  }
+  async function callApi(system, messages, max_tokens, signal) {
+    const r = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ system, messages, max_tokens }), signal });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(data.message || "Erro"); e.code = data.error || "http_" + r.status; throw e; }
+    return data.text || "";
+  }
+  function copyFor(e) {
+    if (!e) return "Algo deu errado.";
+    if (e.name === "AbortError") return "";
+    const known = { no_api_key: "A chave da API ainda não foi configurada na Vercel (OPENAI_API_KEY).", no_password: "Defina APP_PASSWORD nas variáveis da Vercel e publique de novo.", bad_code: "Código de acesso inválido. Digite de novo.", provider_error: "A API respondeu com erro: " + e.message, truncated: "A resposta veio cortada. Tente de novo.", upstream: "Falha de conexão com a API. Tente de novo.", http_504: "O servidor demorou demais. Tente de novo." };
+    return known[e.code] || (e.message && e.message !== "Erro" ? e.message : "Algo deu errado. Tente de novo.");
+  }
+
+  // ---------- speech synthesis ----------
+  let voice = null;
+  function pickVoice() {
+    const vs = speechSynthesis.getVoices();
+    voice = vs.find(v => /^en[-_]US/i.test(v.lang) && /natural|google|samantha|aria|jenny|zira/i.test(v.name)) || vs.find(v => /^en[-_]US/i.test(v.lang)) || vs.find(v => /^en/i.test(v.lang)) || null;
+  }
+  const hasTTS = "speechSynthesis" in window;
+  if (hasTTS) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+  let naturalAvailable = true; // flips to false when /api/tts answers 404 (no OpenAI key)
+  // One shared <audio> element, unlocked inside the first tap: iOS only plays media started by a user gesture.
+  const audioEl = new Audio(); audioEl.preload = "auto";
+  let audioUrl = null, audioUnlocked = false;
+  function unlockAudio() {
+    if (audioUnlocked) return; audioUnlocked = true;
+    try { audioEl.src = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQxAADB8AhSmxhIIEVCSiJrDCQBTcu3UrAIwUdkRgQbFAZC1CQEwTJ9mjRvBA4UOLD8nKVOWfh+UlK3z/177OXrfOdKl7pyn3Xf//WreyTRUoAWgBgkOAGbZHBgG1OF6zM82DWbZaUmMBptgQhGjsyYqc9ae9XFz280948NMBWInluyfCtGkE33sjXFT3uJkv0bcoO3/9fwP//////wQ=="; audioEl.volume = 0; audioEl.play().then(() => { audioEl.pause(); audioEl.volume = 1; }).catch(() => { audioEl.volume = 1; }); } catch (e) {}
+    if (hasTTS) { try { speechSynthesis.cancel(); speechSynthesis.speak(new SpeechSynthesisUtterance("")); } catch (e) {} }
+  }
+  function stopAudio() {
+    try { audioEl.pause(); audioEl.onended = null; audioEl.onerror = null; } catch (e) {}
+    if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; }
+    if (hasTTS) speechSynthesis.cancel();
+  }
+  let speakSeq = 0; // each speak() gets its own id so a stale callback never ends a newer utterance
+  function speakBrowser(text, done, id) {
+    if (!hasTTS) { done(); return; }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US"; if (voice) u.voice = voice; u.rate = parseFloat($("#rate").value);
+    let started = false;
+    u.onstart = () => { started = true; };
+    u.onend = done; u.onerror = done;
+    // a tiny delay after cancel() avoids Chrome's cancel-then-speak hiccup
+    setTimeout(() => { if (id === speakSeq && speaking) speechSynthesis.speak(u); }, 60);
+    // Chrome sometimes never fires onend for long utterances when the tab is in background
+    setTimeout(() => { if (id === speakSeq && speaking && started && !speechSynthesis.speaking && !speechSynthesis.pending) done(); }, Math.max(5000, text.length * 120));
+  }
+  async function speakNatural(text, done, id) {
+    try {
+      const r = await fetch("/api/tts", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ text, speed: parseFloat($("#rate").value) }) });
+      if (id !== speakSeq || !speaking) return; // cancelled or superseded meanwhile
+      if (r.status === 404) { naturalAvailable = false; speakBrowser(text, done, id); return; }
+      if (!r.ok) throw new Error("tts " + r.status);
+      const blob = await r.blob();
+      if (id !== speakSeq || !speaking) return;
+      audioUrl = URL.createObjectURL(blob);
+      audioEl.onended = done; audioEl.onerror = () => { if (id === speakSeq && speaking) speakBrowser(text, done, id); };
+      audioEl.src = audioUrl;
+      await audioEl.play();
+    } catch (e) { if (id === speakSeq && speaking) speakBrowser(text, done, id); }
+  }
+  function speak(text, onDone) {
+    stopAudio(); stopListening();
+    const id = ++speakSeq;
+    speaking = true; setCallState("speaking");
+    const done = () => { if (id !== speakSeq || !speaking) return; speaking = false; if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; } if (onDone) onDone(); else if (callActive) startListening(); };
+    if ($("#voiceKind").value === "natural" && naturalAvailable) speakNatural(text, done, id); else speakBrowser(text, done, id);
+  }
+
+  // ---------- speech recognition (continuous call mode) ----------
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let rec = null, listening = false, restartTimer = null;
+  function setCallState(s) {
+    callBtn.dataset.state = callActive ? s : "idle";
+    callLabel.textContent = !callActive ? "Conversar por voz" : s === "listening" ? "Ouvindo (clique para encerrar)" : s === "speaking" ? "Coach falando" : s === "thinking" ? "Pensando" : "Em chamada";
+  }
+  function startListening() {
+    if (!callActive || !rec || listening || speaking || busy) return;
+    try { rec.start(); listening = true; setCallState("listening"); }
+    catch (e) { listening = false; }
+  }
+  function stopListening() {
+    clearTimeout(restartTimer);
+    if (rec && listening) { try { rec.abort(); } catch (e) {} }
+    listening = false;
+  }
+  if (SR) {
+    rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
+    rec.onresult = (ev) => {
+      let finalText = "", interim = "";
+      for (let i = 0; i < ev.results.length; i++) { const r = ev.results[i]; if (r.isFinal) finalText += r[0].transcript; else interim += r[0].transcript; }
+      if (!interimEl) { interimEl = el("div", "interim"); log.append(interimEl); }
+      interimEl.textContent = (finalText + " " + interim).trim() + "…"; scrollDown();
+      if (finalText.trim()) { stopListening(); if (interimEl) { interimEl.remove(); interimEl = null; } submit(finalText.trim()); }
+    };
+    rec.onend = () => {
+      listening = false;
+      if (interimEl) { interimEl.remove(); interimEl = null; }
+      if (callActive && !speaking && !busy) restartTimer = setTimeout(startListening, 250);
+    };
+    rec.onerror = (ev) => {
+      listening = false;
+      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") { endCall(); setStatus("O navegador bloqueou o microfone. Permita o acesso ao microfone para este site e tente de novo.", true); }
+      else if (ev.error === "audio-capture") { endCall(); setStatus("Nenhum microfone encontrado.", true); }
+      else if (ev.error === "network") { endCall(); setStatus("O reconhecimento de voz precisa de internet e de Chrome/Edge.", true); }
+      // "no-speech" and "aborted" are normal: onend restarts the loop
+    };
+  } else {
+    callBtn.disabled = true; callBtn.title = "Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.";
+  }
+  function endCall() {
+    callActive = false; callBtn.setAttribute("aria-pressed", "false"); stopListening();
+    speaking = false; stopAudio(); setCallState("idle");
+  }
+  callBtn.addEventListener("click", () => {
+    if (callActive) { endCall(); setStatus("Chamada encerrada."); return; }
+    if (!code) { showGate(); return; }
+    unlockAudio();
+    callActive = true; callBtn.setAttribute("aria-pressed", "true");
+    setStatus("Fale em inglês. Quando terminar a frase, espere: o coach responde e volta a ouvir.");
+    if (mode === "vocab") { startListening(); return; }
+    if (!turns.length) {
+      // ask for the microphone inside the tap (browsers want the permission prompt gesture-driven), then open the scene
+      try { rec.start(); listening = true; setTimeout(() => { stopListening(); startScene(); }, 400); } catch (e) { startScene(); }
+    } else startListening();
+  });
+
+  // ---------- rendering ----------
+  function speakBtn(text) { const b = el("button", null, "🔊 ouvir"); b.addEventListener("click", () => speak(text, () => { if (callActive) startListening(); })); return b; }
+  function saveBtn(en, pt) { const b = el("button", null, "★ salvar"); b.addEventListener("click", () => { addSaved(en, pt); b.textContent = "★ salvo"; b.disabled = true; }); return b; }
+  function addSaved(en, pt) { if (saved.some(s => s.en === en)) return; saved.unshift({ en, pt }); saved = saved.slice(0, 80); try { localStorage.setItem("tec_saved", JSON.stringify(saved)); } catch (e) {} renderSaved(); }
+  function renderSaved() {
+    const box = $("#saved"); box.textContent = "";
+    if (!saved.length) { const s = el("span", null, "Clique em ★ numa palavra ou correção para salvar aqui."); s.style.color = "var(--muted)"; box.append(s); return; }
+    saved.forEach(s => { const d = el("div"); d.append(el("span", "en", s.en), el("span", "ptw", s.pt || "")); d.title = "Clique para ouvir"; d.addEventListener("click", () => speak(s.en)); box.append(d); });
+  }
+  function addMe(text) { const m = el("div", "msg me"); m.append(el("div", "who", "você"), el("div", "bubble", text)); log.append(m); scrollDown(); stats.msgs++; bump(); }
+  function addCoach(d) {
+    const m = el("div", "msg coach");
+    m.append(el("div", "who", "coach"), el("div", "bubble", d.reply));
+    const pt = el("div", "pt", d.reply_pt || ""); pt.hidden = true;
+    const tools = el("div", "tools"); tools.append(speakBtn(d.reply));
+    const tb = el("button", null, "PT"); tb.addEventListener("click", () => { pt.hidden = !pt.hidden; }); tools.append(tb);
+    m.append(tools, pt); log.append(m);
+    if (d.correction && d.correction.fixed) {
+      stats.fix++;
+      const c = el("div", "card fix"); c.append(el("div", "label", "correção"));
+      const line = el("div"); line.append(el("s", null, d.correction.original || ""), " → ", el("b", null, d.correction.fixed)); c.append(line, el("div", null, d.correction.why_pt || ""));
+      const t = el("div", "tools"); t.append(speakBtn(d.correction.fixed), saveBtn(d.correction.fixed, "")); c.append(t); log.append(c);
+    }
+    if (d.praise_pt) { const p = el("div", "card ok"); p.append(el("div", "label", "mandou bem"), el("div", null, d.praise_pt)); log.append(p); }
+    if (d.tip_pt) { const p = el("div", "card tip"); p.append(el("div", "label", "dica"), el("div", null, d.tip_pt)); log.append(p); }
+    bump(); scrollDown();
+  }
+  function addThinking() { const t = el("div", "msg coach"); t.append(el("div", "who", "coach"), el("div", "bubble thinking", "Pensando...")); log.append(t); scrollDown(); return t; }
+
+  // ---------- conversation ----------
+  async function askCoach(userText) {
+    busy = true; sendBtn.disabled = true; stopListening(); setCallState("thinking");
+    const think = addThinking(); ctl = new AbortController();
+    turns.push({ role: "user", content: userText });
+    try {
+      const myCtl = ctl;
+      const text = await callApi(modeRules(), turns.slice(-15), 700, myCtl.signal); // odd window: always opens with a student turn
+      if (myCtl !== ctl) return; // superseded by a newer request
+      think.remove();
+      const data = parseJSON(text);
+      busy = false; sendBtn.disabled = false;
+      if (!data || typeof data.reply !== "string") {
+        // unexpected shape: show it, keep the student's turn, don't read raw JSON aloud
+        addCoach({ reply: text.slice(0, 400), reply_pt: "" });
+        setStatus("O coach respondeu num formato inesperado. Tente de novo.", true);
+        if (callActive) startListening();
+        return;
+      }
+      turns.push({ role: "assistant", content: JSON.stringify(data) }); addCoach(data);
+      setStatus("");
+      if ($("#auto").value === "1") speak(data.reply, () => { if (callActive) startListening(); });
+      else if (callActive) startListening();
+    } catch (e) {
+      if (e && e.name === "AbortError") return; // a newer request took over; it manages state
+      think.remove(); turns.pop(); busy = false; sendBtn.disabled = false;
+      const msg = copyFor(e); if (msg) setStatus(msg, true);
+      if (e && e.code === "bad_code") { code = ""; try { localStorage.removeItem("tec_code"); } catch (x) {} showGate(); }
+      if (callActive) { if (e && (e.code === "no_api_key" || e.code === "no_password" || e.code === "bad_code")) endCall(); else startListening(); }
+    }
+  }
+  function submit(text) { if (!text || busy) return; addMe(text); askCoach(text); }
+  function cancelPending() { if (ctl) ctl.abort(); ctl = null; busy = false; sendBtn.disabled = false; }
+  function send() { const t = input.value.trim(); if (!t) return; input.value = ""; input.style.height = ""; submit(t); }
+  sendBtn.addEventListener("click", send);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } });
+  input.addEventListener("input", () => { input.style.height = ""; input.style.height = Math.min(140, input.scrollHeight) + "px"; });
+
+  // ---------- vocabulary ----------
+  async function loadVocab(topicId) {
+    const topic = VOCAB_TOPICS.find(t => t[0] === topicId); if (!topic) return;
+    cancelPending();
+    busy = true; sendBtn.disabled = true; const think = addThinking(); ctl = new AbortController();
+    const myCtl = ctl;
+    const system = `You are an English tutor for a Brazilian IT professional at CEFR level ${$("#level").value}. Reply with ONLY a JSON object, no markdown.`;
+    const prompt = `Topic: "${topic[1]}" (IT / software work). Give 8 useful English words or short expressions for this topic that a Brazilian would actually need at work. Prefer words Brazilians often get wrong or say in "Portuguese-English".
+Shape: {"terms":[{"en":"word or expression","ipa":"simple IPA","pt":"tradução em português","ex":"short example sentence from IT work","note_pt":"short note in Portuguese: common mistake, false friend or pronunciation tip"}], "quiz":[{"q":"question in Portuguese asking how to say something or the meaning of a term","opts":["A","B","C"],"a":0,"why_pt":"explanation in Portuguese"}]}
+The quiz has 4 questions about these terms. "a" is the index of the correct option.`;
+    try { const text = await callApi(system, [{ role: "user", content: prompt }], 1800, myCtl.signal); if (myCtl !== ctl) return; think.remove(); const data = parseJSON(text) || {}; renderVocab(topic[1], data); }
+    catch (e) { if (e && e.name === "AbortError") return; think.remove(); const m = copyFor(e); if (m) setStatus(m, true); }
+    finally { if (myCtl === ctl) { busy = false; sendBtn.disabled = false; } }
+  }
+  function renderVocab(title, data) {
+    const h = el("div", "msg coach"); h.append(el("div", "who", "coach"), el("div", "bubble", "Vocabulário: " + title + ". Ouça cada palavra, repita em voz alta, leia o exemplo e depois faça o quiz.")); log.append(h);
+    const grid = el("div", "vocab");
+    (data.terms || []).forEach(t => {
+      const c = el("div", "term"); c.append(el("div", "en", t.en), el("div", "ipa", t.ipa || ""), el("div", "pt", t.pt || ""), el("div", "ex", t.ex || ""));
+      if (t.note_pt) c.append(el("div", "note", t.note_pt));
+      const tools = el("div", "tools"); tools.append(speakBtn(t.en)); if (t.ex) { const b = el("button", null, "🔊 exemplo"); b.addEventListener("click", () => speak(t.ex)); tools.append(b); } tools.append(saveBtn(t.en, t.pt)); c.append(tools); grid.append(c);
+    });
+    log.append(grid);
+    (data.quiz || []).forEach((q, i) => log.append(renderQuiz(q, i + 1)));
+    const more = el("div", "starters"); VOCAB_TOPICS.forEach(t => { const b = el("button", null, t[1]); b.addEventListener("click", () => loadVocab(t[0])); more.append(b); }); log.append(more); scrollDown();
+  }
+  function renderQuiz(q, n) {
+    const box = el("div", "quiz"); box.append(el("div", "eyebrow", "quiz " + n), el("div", null, q.q));
+    const opts = el("div", "opts"); const why = el("div", "why", q.why_pt || ""); why.hidden = true;
+    const answer = Number(q.a) || 0;
+    (q.opts || []).forEach((o, i) => { const b = el("button", null, o); b.addEventListener("click", () => { stats.quizN++; if (i === answer) { stats.quizOk++; b.classList.add("right"); } else { b.classList.add("wrong"); if (opts.children[answer]) opts.children[answer].classList.add("right"); } [...opts.children].forEach(x => x.disabled = true); why.hidden = false; bump(); }); opts.append(b); });
+    box.append(opts, why); return box;
+  }
+
+  // ---------- modes ----------
+  function renderScenarioBar() {
+    scenariosBar.textContent = "";
+    const list = mode === "sim" ? SCENARIOS.sim : mode === "gram" ? SCENARIOS.gram : mode === "vocab" ? VOCAB_TOPICS : null;
+    scenariosBar.hidden = !list; if (!list) return;
+    scenariosBar.append(el("span", "eyebrow", mode === "vocab" ? "tema" : mode === "sim" ? "cenário" : "tópico"));
+    list.forEach(s => { const b = el("button", "chip", s[1]); b.setAttribute("aria-pressed", String(scenario === s[0])); b.addEventListener("click", () => { scenario = s[0]; renderScenarioBar(); startScene(); }); scenariosBar.append(b); });
+  }
+  function startScene() {
+    cancelPending(); stopAudio(); speaking = false;
+    turns = []; log.textContent = "";
+    if (mode === "vocab") { loadVocab(scenario || VOCAB_TOPICS[0][0]); return; }
+    if ((mode === "sim" || mode === "gram") && !scenario) scenario = SCENARIOS[mode][0][0], renderScenarioBar();
+    askCoach(mode === "sim" ? "[app] Start the role-play now. You speak first, in character." : mode === "gram" ? "[app] Start this topic: teach the first point with two tiny examples, then ask the student to try one sentence." : "[app] Start the conversation: greet the student briefly and ask about their day or current project.");
+  }
+  function showEmpty() {
+    log.textContent = "";
+    const e = el("div", "empty");
+    e.append(el("h2", null, { chat: "Conversa livre sobre o seu trabalho", sim: "Escolha um cenário acima", vocab: "Escolha um tema acima", gram: "Escolha um tópico acima" }[mode]));
+    e.append(el("div", null, { chat: "Clique em \"Conversar por voz\" e fale, ou escreva abaixo. O coach responde em inglês simples, corrige o que precisa e explica em português.", sim: "Você entra numa cena real de trabalho (standup, bug, call, entrevista) e o coach faz o outro papel, por voz ou texto.", vocab: "Oito termos do dia a dia de TI com pronúncia, tradução, exemplo e um quiz rápido.", gram: "Mini-aulas de gramática e pronúncia com exemplos de TI e exercícios curtos." }[mode]));
+    if (mode === "chat") {
+      const st = el("div", "starters");
+      ["Hi! Today I work on a bug in the API.", "Yesterday I had a meeting with my team.", "I need help to explain my project in English.", "Como eu digo 'subir para produção' em inglês?"].forEach(s => { const b = el("button", null, s); b.addEventListener("click", () => submit(s)); st.append(b); });
+      e.append(el("div", "eyebrow", "comece com"), st);
+    }
+    log.append(e);
+  }
+  document.querySelectorAll(".mode").forEach(b => b.addEventListener("click", () => {
+    cancelPending(); endCall();
+    mode = b.dataset.mode; scenario = null; turns = [];
+    document.querySelectorAll(".mode").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+    renderScenarioBar(); showEmpty();
+  }));
+  const resetAll = () => { cancelPending(); endCall(); turns = []; scenario = null; renderScenarioBar(); showEmpty(); setStatus(""); };
+  $("#reset").addEventListener("click", resetAll);
+  $("#reset2").addEventListener("click", resetAll);
+  $("#level").addEventListener("change", () => setStatus("Nível alterado: vale a partir da próxima mensagem."));
+
+  // ---------- access gate ----------
+  function showGate() { $("#gate").hidden = false; $("#gateCode").focus(); }
+  $("#gateForm").addEventListener("submit", (e) => {
+    e.preventDefault(); code = $("#gateCode").value.trim(); if (!code) return;
+    try { localStorage.setItem("tec_code", code); } catch (x) {}
+    $("#gate").hidden = true; $("#gateErr").textContent = ""; setStatus("");
+  });
+
+  // ---------- boot ----------
+  renderSaved(); renderScenarioBar(); showEmpty(); bump();
+  if (!code) showGate();
+  if (!SR) setStatus("Para conversar por voz, abra este site no Chrome ou Edge. Por texto funciona em qualquer navegador.", true);
+})();
+</script>
+</body>
+</html>
