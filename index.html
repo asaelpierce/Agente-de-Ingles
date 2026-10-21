@@ -42,7 +42,7 @@ header.top h1 span { font-family: var(--font-mono); color: var(--accent); font-w
 .settings select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
 
 main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px; }
-@media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } aside.notes { display: none; } }
+@media (max-width: 860px) { main { grid-template-columns: minmax(0, 1fr); } }
 section.chat { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
 .scenario-bar { padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-bottom: 1px solid var(--line); background: var(--surface); }
 .chip { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
@@ -117,6 +117,9 @@ textarea { flex: 1; min-width: 0; resize: none; font: inherit; padding: 10px 12p
 
 aside.notes { border-left: 1px solid var(--line); background: var(--surface); padding-block: 16px; padding-left: 16px; padding-right: max(16px, env(safe-area-inset-right, 0px)); overflow-y: auto; display: flex; flex-direction: column; gap: 16px; font-size: 13.5px; }
 aside.notes h2 { font-size: 13px; font-weight: 600; }
+@media (max-width: 860px) { aside.notes { display: none; } }
+.xpchip { display: none; font-family: var(--font-mono); font-size: 12px; color: var(--fg); background: var(--accent-soft); border-radius: 999px; padding: 3px 10px; }
+@media (max-width: 860px) { .xpchip { display: inline-block; } }
 aside .stat { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; padding: 4px 0; border-bottom: 1px solid var(--line); }
 aside ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 aside .saved { display: flex; flex-direction: column; gap: 4px; }
@@ -124,6 +127,37 @@ aside .saved div { display: flex; justify-content: space-between; gap: 8px; curs
 aside .saved span.en { font-weight: 500; }
 aside .saved span.ptw { color: var(--muted); }
 .ghost { border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 6px; padding: 5px 10px; font-size: 13px; }
+
+/* activities */
+.ex { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; max-width: 72ch; }
+.ex .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.ex .prompt { font-size: 15px; color: var(--muted); }
+.ex .text { font-size: 18px; font-weight: 500; line-height: 1.45; }
+.ex .text .blank { display: inline-block; min-width: 5ch; border-bottom: 2px solid var(--accent); text-align: center; color: var(--accent); }
+.ex input[type="text"] { font: inherit; font-size: 16px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); width: 100%; }
+.ex .actions, .summary .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.ex .btn, .summary .btn { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 8px; padding: 8px 14px; font-weight: 500; }
+.ex .btn.primary, .summary .btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.ex .btn:disabled { opacity: .5; cursor: default; }
+.summary li .btn { padding: 2px 8px; font-size: 12px; }
+.ex .btn.rec[aria-pressed="true"] { background: var(--live-soft); border-color: var(--live); color: var(--live); }
+.ex .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 40px; padding: 6px; border-radius: 8px; border: 1px dashed var(--line); }
+.ex .chips.answer { border-style: solid; background: var(--bg); }
+.ex .chip { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 6px; padding: 5px 10px; font-size: 15px; }
+.ex .opts { display: flex; flex-direction: column; gap: 6px; }
+.ex .opts .btn { text-align: left; }
+.ex .opts .btn.right { background: var(--good-soft); border-color: var(--good); }
+.ex .opts .btn.wrong { background: var(--warn-soft); border-color: var(--warn); }
+.ex .result { border-radius: 8px; padding: 10px 12px; font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.ex .result.ok { background: var(--good-soft); border: 1px solid var(--good); }
+.ex .result.near { background: var(--accent-soft); border: 1px solid var(--accent); }
+.ex .result.bad { background: var(--warn-soft); border: 1px solid var(--warn); }
+.ex .said { font-style: italic; color: var(--muted); }
+.progress { height: 6px; background: var(--surface-2); border-radius: 999px; overflow: hidden; }
+.progress i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .3s; }
+.summary { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; max-width: 72ch; }
+.summary .big { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.summary ul { margin: 0; padding-left: 18px; }
 
 .gate { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; padding: 16px; z-index: 20; }
 .gate form { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; max-width: 380px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
@@ -150,6 +184,7 @@ aside .saved span.ptw { color: var(--muted); }
     <button class="mode" data-mode="sim" aria-pressed="false">Simulação</button>
     <button class="mode" data-mode="vocab" aria-pressed="false">Vocabulário</button>
     <button class="mode" data-mode="gram" aria-pressed="false">Gramática</button>
+    <button class="mode" data-mode="tasks" aria-pressed="false">Atividades</button>
   </div>
   <div class="settings">
     <label for="level">Nível</label>
@@ -160,6 +195,7 @@ aside .saved span.ptw { color: var(--muted); }
     <select id="rate"><option value="0.8">lenta</option><option value="0.95" selected>normal</option><option value="1.1">rápida</option></select>
     <label for="auto">Ler respostas</label>
     <select id="auto"><option value="1" selected>sim</option><option value="0">não</option></select>
+    <span class="xpchip" id="xpChip"></span>
   </div>
 </header>
 
@@ -183,6 +219,13 @@ aside .saved span.ptw { color: var(--muted); }
       <div class="stat"><span>Mensagens</span><span id="stMsgs">0</span></div>
       <div class="stat"><span>Correções</span><span id="stFix">0</span></div>
       <div class="stat"><span>Acertos no quiz</span><span id="stQuiz">0 / 0</span></div>
+    </div>
+    <div>
+      <h2>Progresso</h2>
+      <div class="stat"><span>XP total</span><span id="stXp">0</span></div>
+      <div class="stat"><span>Dias seguidos</span><span id="stStreak">0</span></div>
+      <div class="stat"><span>Exercícios hoje</span><span id="stToday">0</span></div>
+      <div class="stat"><span>Acerto geral</span><span id="stAcc">–</span></div>
     </div>
     <div>
       <h2>Palavras salvas</h2>
@@ -341,7 +384,13 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
 
   // ---------- speech recognition (continuous call mode) ----------
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let rec = null, listening = false, restartTimer = null;
+  let rec = null, listening = false, restartTimer = null, recOnce = null;
+  function listenOnce(onFinal, onInterim) {
+    if (!rec) { onFinal(""); return false; }
+    stopAudio(); speaking = false; stopListening(); unlockAudio();
+    recOnce = { onFinal, onInterim };
+    try { rec.start(); listening = true; return true; } catch (e) { recOnce = null; listening = false; onFinal(""); return false; }
+  }
   function setCallState(s) {
     callBtn.dataset.state = callActive ? s : "idle";
     callLabel.textContent = !callActive ? "Conversar por voz" : s === "listening" ? "Ouvindo (clique para encerrar)" : s === "speaking" ? "Coach falando" : s === "thinking" ? "Pensando" : "Em chamada";
@@ -353,6 +402,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
   }
   function stopListening() {
     clearTimeout(restartTimer);
+    recOnce = null;
     if (rec && listening) { try { rec.abort(); } catch (e) {} }
     listening = false;
   }
@@ -361,6 +411,11 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     rec.onresult = (ev) => {
       let finalText = "", interim = "";
       for (let i = 0; i < ev.results.length; i++) { const r = ev.results[i]; if (r.isFinal) finalText += r[0].transcript; else interim += r[0].transcript; }
+      if (recOnce) { // one-shot listening for an exercise
+        if (recOnce.onInterim) recOnce.onInterim((finalText + " " + interim).trim());
+        if (finalText.trim()) { const cb = recOnce; recOnce = null; stopListening(); cb.onFinal(finalText.trim()); }
+        return;
+      }
       if (!interimEl) { interimEl = el("div", "interim"); log.append(interimEl); }
       interimEl.textContent = (finalText + " " + interim).trim() + "…"; scrollDown();
       if (finalText.trim()) { stopListening(); if (interimEl) { interimEl.remove(); interimEl = null; } submit(finalText.trim()); }
@@ -368,6 +423,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     rec.onend = () => {
       listening = false;
       if (interimEl) { interimEl.remove(); interimEl = null; }
+      if (recOnce) { const cb = recOnce; recOnce = null; cb.onFinal(""); return; }
       if (callActive && !speaking && !busy) restartTimer = setTimeout(startListening, 250);
     };
     rec.onerror = (ev) => {
@@ -387,10 +443,10 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
   callBtn.addEventListener("click", () => {
     if (callActive) { endCall(); setStatus("Chamada encerrada."); return; }
     if (!code) { showGate(); return; }
+    if (mode === "vocab" || mode === "tasks") { setStatus("Neste modo, use os botões do próprio exercício. A chamada por voz é para Conversa, Simulação e Gramática."); return; }
     unlockAudio();
     callActive = true; callBtn.setAttribute("aria-pressed", "true");
     setStatus("Fale em inglês. Quando terminar a frase, espere: o coach responde e volta a ouvir.");
-    if (mode === "vocab") { startListening(); return; }
     if (!turns.length) {
       // ask for the microphone inside the tap (browsers want the permission prompt gesture-driven), then open the scene
       try { rec.start(); listening = true; setTimeout(() => { stopListening(); startScene(); }, 400); } catch (e) { startScene(); }
@@ -498,26 +554,211 @@ The quiz has 4 questions about these terms. "a" is the index of the correct opti
     box.append(opts, why); return box;
   }
 
+  // ---------- activities (exercise engine) ----------
+  const ACT_TYPES = [["mission", "Missão do dia (mista)"], ["fill", "Completar frases"], ["dictation", "Ditado"], ["repeat", "Repetir (pronúncia)"], ["translate", "Traduzir"], ["order", "Ordenar palavras"], ["choice", "Múltipla escolha"]];
+  const TYPE_LABEL = { fill: "Complete a frase", dictation: "Ouça e escreva", repeat: "Ouça e repita", translate: "Traduza para o inglês", order: "Coloque as palavras na ordem", choice: "Escolha a opção certa" };
+  let progress = { xp: 0, days: {}, done: 0, ok: 0 };
+  try { progress = Object.assign(progress, JSON.parse(localStorage.getItem("tec_progress") || "{}")); } catch (e) {}
+  function today() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function streak() {
+    let n = 0; const d = new Date();
+    for (;;) { const k = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); if (progress.days[k]) { n++; d.setDate(d.getDate() - 1); } else break; if (n > 365) break; }
+    return n;
+  }
+  function renderProgress() {
+    $("#stXp").textContent = progress.xp; $("#stStreak").textContent = streak(); $("#stToday").textContent = progress.days[today()] || 0;
+    $("#stAcc").textContent = progress.done ? Math.round(100 * progress.ok / progress.done) + "%" : "–";
+    $("#xpChip").textContent = progress.xp + " XP · " + streak() + (streak() === 1 ? " dia" : " dias");
+  }
+  function recordResult(score) { // score: 1 ok, 0.5 near, 0 wrong
+    progress.done++; if (score >= 0.5) progress.ok++; progress.xp += Math.round(score * 10); progress.days[today()] = (progress.days[today()] || 0) + 1;
+    try { localStorage.setItem("tec_progress", JSON.stringify(progress)); } catch (e) {}
+    renderProgress();
+  }
+  function norm(s) { return String(s || "").toLowerCase().replace(/['’]/g, "'").replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim(); }
+  function wordSim(a, b) {
+    const x = norm(a).split(" ").filter(Boolean), y = norm(b).split(" ").filter(Boolean);
+    if (!x.length || !y.length) return 0;
+    const d = []; for (let i = 0; i <= x.length; i++) { d[i] = [i]; for (let j = 1; j <= y.length; j++) d[i][j] = i === 0 ? j : 0; }
+    for (let i = 1; i <= x.length; i++) for (let j = 1; j <= y.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (x[i - 1] === y[j - 1] ? 0 : 1));
+    return 1 - d[x.length][y.length] / Math.max(x.length, y.length);
+  }
+  function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+
+  const ACT_SYSTEM = () => `You create English exercises for a Brazilian IT professional (software, automation, systems) at CEFR level ${$("#level").value}. All instructions and explanations are in Brazilian Portuguese; all English is natural workplace English about IT (deploys, bugs, servers, databases, APIs, meetings, tickets, code review). Reply with ONLY a JSON object, no markdown.`;
+  function actPrompt(kind, n) {
+    const types = kind === "mission" ? "a varied mix of the types below (at least one of each of fill, dictation, repeat, translate, order, choice)" : `only type "${kind}"`;
+    const words = saved.slice(0, 8).map(s => s.en).filter(Boolean);
+    const lvl = $("#level").value;
+    const len = lvl === "A1" ? "4-6 words" : lvl === "A2" ? "5-8 words" : "7-11 words";
+    return `Create ${n} exercises: ${types}. Vary topics and sentence patterns; pick a random IT situation for each. Sentences have ${len}. Random seed: ${Math.random().toString(36).slice(2, 8)}.
+${words.length ? "Reuse some of these words the student saved: " + words.join(", ") + "." : ""}
+Types and shapes (every exercise has "type", "prompt_pt" and "explain_pt"):
+- fill: {"type":"fill","prompt_pt":"...","text":"sentence with exactly one blank written as ___","answer":"the missing word","accept":["other acceptable words"],"explain_pt":"short rule or meaning in Portuguese"} — the blank tests a useful verb, preposition or tech term.
+- dictation: {"type":"dictation","answer":"the English sentence to hear and write","explain_pt":"translation in Portuguese"}.
+- repeat: {"type":"repeat","answer":"the English sentence to hear and say","explain_pt":"pronunciation tip in Portuguese for the hardest word"}.
+- translate: {"type":"translate","text":"frase em português","answer":"best English translation","accept":["other good translations"],"explain_pt":"tip in Portuguese"}.
+- order: {"type":"order","answer":"an English sentence","explain_pt":"why this order, in Portuguese"}.
+- choice: {"type":"choice","text":"question in Portuguese, or an English sentence with ___","options":["A","B","C"],"answer":0,"explain_pt":"why, in Portuguese"} — "answer" is the index of the correct option.
+Reply: {"title_pt":"short title","exercises":[...]}`;
+  }
+
+  let act = null; // {list, i, results, kind}
+  async function loadActivities(kind) {
+    cancelPending(); stopAudio(); speaking = false; unlockAudio();
+    const n = kind === "mission" ? 8 : 6;
+    busy = true; sendBtn.disabled = true; const think = addThinking(); ctl = new AbortController(); const myCtl = ctl;
+    setStatus("Gerando exercícios...");
+    try {
+      const text = await callApi(ACT_SYSTEM(), [{ role: "user", content: actPrompt(kind, n) }], 3000, myCtl.signal);
+      if (myCtl !== ctl) return;
+      think.remove();
+      const data = parseJSON(text);
+      const list = (data && Array.isArray(data.exercises) ? data.exercises : []).filter(e => e && e.type && TYPE_LABEL[e.type] && e.answer !== undefined);
+      if (!list.length) { setStatus("Não consegui gerar os exercícios. Tente de novo.", true); return; }
+      act = { list, i: 0, results: [], kind, title: (data && data.title_pt) || "Atividades" };
+      setStatus("");
+      renderExercise();
+    } catch (e) { if (e && e.name === "AbortError") return; think.remove(); const m = copyFor(e); if (m) setStatus(m, true); }
+    finally { if (myCtl === ctl) { busy = false; sendBtn.disabled = false; } }
+  }
+
+  function renderExercise() {
+    const ex = act.list[act.i];
+    log.textContent = "";
+    const box = el("div", "ex");
+    const head = el("div", "head");
+    head.append(el("span", "eyebrow", act.title + " · " + (act.i + 1) + " de " + act.list.length));
+    const bar = el("div", "progress"); const fill = el("i"); fill.style.width = Math.round(100 * act.i / act.list.length) + "%"; bar.append(fill);
+    box.append(head, bar, el("div", "prompt", ex.prompt_pt || TYPE_LABEL[ex.type]));
+    const result = el("div", "result"); result.hidden = true;
+    const actions = el("div", "actions");
+    let checked = false;
+    const finish = (score, detail) => {
+      if (checked) return; checked = true;
+      recordResult(score); act.results.push({ ex, score });
+      result.hidden = false; result.className = "result " + (score >= 1 ? "ok" : score >= 0.5 ? "near" : "bad");
+      result.append(el("div", null, score >= 1 ? "Certo!" : score >= 0.5 ? "Quase lá." : "Ainda não."));
+      if (detail) result.append(detail);
+      if (ex.explain_pt) result.append(el("div", null, ex.explain_pt));
+      const ans = el("div"); ans.append("Resposta: ", el("b", null, String(ex.answer)), " "); const hear = el("button", "btn", "🔊 ouvir"); hear.addEventListener("click", () => speak(String(ex.answer))); ans.append(hear); result.append(ans);
+      [...actions.querySelectorAll("button")].forEach(b => { if (!b.classList.contains("keep")) b.disabled = true; });
+      const next = el("button", "btn primary", act.i + 1 < act.list.length ? "Próximo →" : "Ver resultado");
+      next.addEventListener("click", () => { act.i++; if (act.i < act.list.length) renderExercise(); else renderSummary(); });
+      actions.append(next); next.focus();
+    };
+    const textInput = () => { const inp = el("input"); inp.type = "text"; inp.autocomplete = "off"; inp.spellcheck = false; inp.id = "exInput"; return inp; };
+    const checkBtn = (fn) => { const b = el("button", "btn primary", "Verificar"); b.addEventListener("click", fn); return b; };
+    const hearBtn = (text, label) => { const b = el("button", "btn keep", label || "🔊 ouvir"); b.addEventListener("click", () => speak(text)); return b; };
+
+    if (ex.type === "fill") {
+      const t = el("div", "text"); const parts = String(ex.text || "___").split("___"); t.append(parts[0] || ""); t.append(el("span", "blank", "____")); t.append(parts.slice(1).join("___")); box.append(t);
+      const inp = textInput(); inp.placeholder = "palavra que falta"; box.append(inp);
+      const ok = () => { const v = norm(inp.value); if (!v) return; const good = [ex.answer].concat(ex.accept || []).map(norm); finish(good.includes(v) ? 1 : 0, el("div", "said", "Você escreveu: " + inp.value)); };
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") ok(); });
+      actions.append(checkBtn(ok));
+      setTimeout(() => inp.focus(), 50);
+    } else if (ex.type === "dictation") {
+      box.append(el("div", "text", "Clique em ouvir, depois escreva o que ouviu."));
+      const inp = textInput(); inp.placeholder = "escreva a frase em inglês"; box.append(inp);
+      const ok = () => { const v = inp.value.trim(); if (!v) return; const s = wordSim(v, ex.answer); finish(s >= 0.85 ? 1 : s >= 0.6 ? 0.5 : 0, el("div", "said", "Você escreveu: " + v)); };
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") ok(); });
+      actions.append(hearBtn(ex.answer), checkBtn(ok));
+      setTimeout(() => speak(ex.answer), 300);
+    } else if (ex.type === "repeat") {
+      const t = el("div", "text", ex.answer); box.append(t);
+      const said = el("div", "said", rec ? "Clique em Falar e repita a frase." : "Seu navegador não tem reconhecimento de voz; use Chrome ou Edge. Você pode digitar a frase para treinar a escrita."); box.append(said);
+      const inp = textInput(); inp.placeholder = "ou digite a frase"; box.append(inp);
+      const grade = (v) => { if (!v) { said.textContent = "Não entendi. Tente de novo, mais perto do microfone."; return; } const s = wordSim(v, ex.answer); finish(s >= 0.85 ? 1 : s >= 0.6 ? 0.5 : 0, el("div", "said", "Você disse: " + v)); };
+      const mic = el("button", "btn rec", "🎤 Falar"); if (!rec) mic.disabled = true;
+      mic.addEventListener("click", () => {
+        if (listening) { stopListening(); mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎤 Falar"; return; }
+        mic.setAttribute("aria-pressed", "true"); mic.textContent = "Ouvindo... (clique para parar)"; said.textContent = "Fale agora.";
+        listenOnce((finalText) => { mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎤 Falar"; grade(finalText); }, (txt) => { said.textContent = txt + "…"; });
+      });
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && inp.value.trim()) grade(inp.value.trim()); });
+      actions.append(hearBtn(ex.answer), mic, checkBtn(() => { if (inp.value.trim()) grade(inp.value.trim()); }));
+      setTimeout(() => speak(ex.answer), 300);
+    } else if (ex.type === "translate") {
+      box.append(el("div", "text", ex.text || ""));
+      const inp = textInput(); inp.placeholder = "escreva em inglês"; box.append(inp);
+      const ok = async () => {
+        const v = inp.value.trim(); if (!v || checked) return;
+        const good = [ex.answer].concat(ex.accept || []).map(norm);
+        if (good.includes(norm(v))) { finish(1, el("div", "said", "Você escreveu: " + v)); return; }
+        // several translations can be right: let the coach grade it
+        [...actions.querySelectorAll("button")].forEach(b => b.disabled = true); setStatus("Corrigindo...");
+        try {
+          const text = await callApi(`You grade an English translation written by a Brazilian IT professional (CEFR ${$("#level").value}). Reply with ONLY JSON: {"ok": true|false, "near": true|false, "why_pt": "one short sentence in Portuguese"}. ok = correct and natural even if different from the reference; near = understandable but with a mistake.`,
+            [{ role: "user", content: `Portuguese: ${ex.text}\nReference: ${ex.answer}\nStudent: ${v}` }], 200);
+          const g = parseJSON(text) || {}; setStatus("");
+          const d = el("div"); d.append(el("div", "said", "Você escreveu: " + v)); if (g.why_pt) d.append(el("div", null, g.why_pt));
+          finish(g.ok ? 1 : g.near ? 0.5 : 0, d);
+        } catch (e) { setStatus(copyFor(e), true); [...actions.querySelectorAll("button")].forEach(b => b.disabled = false); }
+      };
+      inp.addEventListener("keydown", (e) => { if (e.key === "Enter") ok(); });
+      actions.append(checkBtn(ok));
+      setTimeout(() => inp.focus(), 50);
+    } else if (ex.type === "order") {
+      const words = String(ex.answer).split(/\s+/).filter(Boolean);
+      const pool = el("div", "chips"), ans = el("div", "chips answer"); let chosen = [];
+      const draw = () => {
+        pool.textContent = ""; ans.textContent = "";
+        shuffledWords.forEach((w, idx) => { if (chosen.includes(idx)) return; const c = el("button", "chip", w); c.addEventListener("click", () => { chosen.push(idx); draw(); }); pool.append(c); });
+        chosen.forEach((idx, pos) => { const c = el("button", "chip", shuffledWords[idx]); c.addEventListener("click", () => { chosen.splice(pos, 1); draw(); }); ans.append(c); });
+        if (!ans.children.length) ans.append(el("span", "said", "clique nas palavras na ordem certa"));
+      };
+      let shuffledWords = shuffle(words); if (words.length > 1 && shuffledWords.join(" ") === words.join(" ")) shuffledWords = shuffledWords.reverse();
+      draw(); box.append(ans, pool);
+      actions.append(checkBtn(() => { if (chosen.length !== words.length) return; const v = chosen.map(i => shuffledWords[i]).join(" "); finish(norm(v) === norm(ex.answer) ? 1 : wordSim(v, ex.answer) >= 0.7 ? 0.5 : 0, el("div", "said", "Sua ordem: " + v)); }), hearBtn(ex.answer));
+    } else if (ex.type === "choice") {
+      box.append(el("div", "text", ex.text || ""));
+      const opts = el("div", "opts"); const answer = Number(ex.answer) || 0;
+      (ex.options || []).forEach((o, i) => { const b = el("button", "btn", String(o)); b.addEventListener("click", () => { b.classList.add(i === answer ? "right" : "wrong"); if (opts.children[answer]) opts.children[answer].classList.add("right"); [...opts.children].forEach(x => x.disabled = true); finish(i === answer ? 1 : 0); }); opts.append(b); });
+      box.append(opts);
+    }
+    box.append(actions, result); log.append(box); scrollDown();
+  }
+
+  function renderSummary() {
+    log.textContent = "";
+    const pts = act.results.reduce((s, r) => s + r.score, 0), n = act.results.length;
+    const box = el("div", "summary");
+    box.append(el("div", "eyebrow", act.title), el("div", "big", Math.round(100 * pts / n) + "% · +" + Math.round(pts * 10) + " XP"));
+    const wrong = act.results.filter(r => r.score < 1);
+    if (wrong.length) {
+      box.append(el("div", null, "Para revisar:"));
+      const ul = el("ul"); wrong.forEach(r => { const li = el("li"); li.append(el("b", null, String(r.ex.answer))); if (r.ex.explain_pt) li.append(" — " + r.ex.explain_pt); const h = el("button", "btn keep", "🔊"); h.style.marginLeft = "6px"; h.addEventListener("click", () => speak(String(r.ex.answer))); li.append(h); ul.append(li); });
+      box.append(ul);
+    } else box.append(el("div", null, "Tudo certo. Suba o nível no topo da página se estiver fácil demais."));
+    const acts = el("div", "actions");
+    const again = el("button", "btn primary", "Nova rodada"); again.addEventListener("click", () => loadActivities(act.kind)); acts.append(again);
+    const other = el("button", "btn", "Missão mista"); other.addEventListener("click", () => { scenario = "mission"; renderScenarioBar(); loadActivities("mission"); }); acts.append(other);
+    box.append(acts); log.append(box); scrollDown();
+  }
+
   // ---------- modes ----------
   function renderScenarioBar() {
     scenariosBar.textContent = "";
-    const list = mode === "sim" ? SCENARIOS.sim : mode === "gram" ? SCENARIOS.gram : mode === "vocab" ? VOCAB_TOPICS : null;
+    const list = mode === "sim" ? SCENARIOS.sim : mode === "gram" ? SCENARIOS.gram : mode === "vocab" ? VOCAB_TOPICS : mode === "tasks" ? ACT_TYPES : null;
     scenariosBar.hidden = !list; if (!list) return;
-    scenariosBar.append(el("span", "eyebrow", mode === "vocab" ? "tema" : mode === "sim" ? "cenário" : "tópico"));
+    scenariosBar.append(el("span", "eyebrow", mode === "vocab" ? "tema" : mode === "sim" ? "cenário" : mode === "tasks" ? "atividade" : "tópico"));
     list.forEach(s => { const b = el("button", "chip", s[1]); b.setAttribute("aria-pressed", String(scenario === s[0])); b.addEventListener("click", () => { scenario = s[0]; renderScenarioBar(); startScene(); }); scenariosBar.append(b); });
   }
   function startScene() {
     cancelPending(); stopAudio(); speaking = false;
     turns = []; log.textContent = "";
     if (mode === "vocab") { loadVocab(scenario || VOCAB_TOPICS[0][0]); return; }
+    if (mode === "tasks") { loadActivities(scenario || "mission"); return; }
     if ((mode === "sim" || mode === "gram") && !scenario) scenario = SCENARIOS[mode][0][0], renderScenarioBar();
     askCoach(mode === "sim" ? "[app] Start the role-play now. You speak first, in character." : mode === "gram" ? "[app] Start this topic: teach the first point with two tiny examples, then ask the student to try one sentence." : "[app] Start the conversation: greet the student briefly and ask about their day or current project.");
   }
   function showEmpty() {
     log.textContent = "";
     const e = el("div", "empty");
-    e.append(el("h2", null, { chat: "Conversa livre sobre o seu trabalho", sim: "Escolha um cenário acima", vocab: "Escolha um tema acima", gram: "Escolha um tópico acima" }[mode]));
-    e.append(el("div", null, { chat: "Clique em \"Conversar por voz\" e fale, ou escreva abaixo. O coach responde em inglês simples, corrige o que precisa e explica em português.", sim: "Você entra numa cena real de trabalho (standup, bug, call, entrevista) e o coach faz o outro papel, por voz ou texto.", vocab: "Oito termos do dia a dia de TI com pronúncia, tradução, exemplo e um quiz rápido.", gram: "Mini-aulas de gramática e pronúncia com exemplos de TI e exercícios curtos." }[mode]));
+    e.append(el("h2", null, { chat: "Conversa livre sobre o seu trabalho", sim: "Escolha um cenário acima", vocab: "Escolha um tema acima", gram: "Escolha um tópico acima", tasks: "Escolha uma atividade acima" }[mode]));
+    e.append(el("div", null, { chat: "Clique em \"Conversar por voz\" e fale, ou escreva abaixo. O coach responde em inglês simples, corrige o que precisa e explica em português.", sim: "Você entra numa cena real de trabalho (standup, bug, call, entrevista) e o coach faz o outro papel, por voz ou texto.", vocab: "Oito termos do dia a dia de TI com pronúncia, tradução, exemplo e um quiz rápido.", gram: "Mini-aulas de gramática e pronúncia com exemplos de TI e exercícios curtos.", tasks: "Exercícios novos a cada rodada, gerados para o seu nível: completar frases, ditado, repetir em voz alta, traduzir, ordenar palavras e múltipla escolha. Cada acerto vale XP, e a sequência de dias conta no painel." }[mode]));
+    if (mode === "tasks") { const b = el("button", "send", "Começar missão do dia"); b.style.alignSelf = "flex-start"; b.addEventListener("click", () => { scenario = "mission"; renderScenarioBar(); loadActivities("mission"); }); e.append(b); }
     if (mode === "chat") {
       const st = el("div", "starters");
       ["Hi! Today I work on a bug in the API.", "Yesterday I had a meeting with my team.", "I need help to explain my project in English.", "Como eu digo 'subir para produção' em inglês?"].forEach(s => { const b = el("button", null, s); b.addEventListener("click", () => submit(s)); st.append(b); });
@@ -545,7 +786,7 @@ The quiz has 4 questions about these terms. "a" is the index of the correct opti
   });
 
   // ---------- boot ----------
-  renderSaved(); renderScenarioBar(); showEmpty(); bump();
+  renderSaved(); renderScenarioBar(); showEmpty(); bump(); renderProgress();
   if (!code) showGate();
   if (!SR) setStatus("Para conversar por voz, abra este site no Chrome ou Edge. Por texto funciona em qualquer navegador.", true);
 })();
