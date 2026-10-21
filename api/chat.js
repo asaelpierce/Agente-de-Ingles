@@ -1,16 +1,39 @@
 // Vercel serverless function: proxies the Tech English Coach to OpenAI (default) or Anthropic.
 // Env vars:
-//   OPENAI_API_KEY      -> uses OpenAI Chat Completions (OPENAI_MODEL, default gpt-4.1-mini)
+//   OPENAI_API_KEY      -> uses OpenAI Chat Completions (OPENAI_MODEL, default gpt-6-astra; OPENAI_REASONING, default "low")
 //   ANTHROPIC_API_KEY   -> uses Anthropic Messages API (ANTHROPIC_MODEL, default claude-sonnet-5-5)
-//   APP_PASSWORD        -> access code the page must send (recommended)
+//   APP_PASSWORD        -> access code the page must send (required)
 
-const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-6-astra";
+const OPENAI_REASONING = process.env.OPENAI_REASONING || "low";
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
 
 function readBody(req) {
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = null; } }
   return body;
+}
+
+async function openaiChat(key, system, messages, maxTokens) {
+  const base = { model: OPENAI_MODEL, max_completion_tokens: maxTokens, messages: [{ role: "system", content: system }, ...messages] };
+  const extras = { response_format: { type: "json_object" } };
+  if (/^(gpt-5|gpt-6|o\d)/.test(OPENAI_MODEL) && OPENAI_REASONING !== "none") extras.reasoning_effort = OPENAI_REASONING;
+  let payload = Object.assign({}, base, extras);
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const r = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: { "content-type": "application/json", "authorization": "Bearer " + key },
+      body: JSON.stringify(payload)
+    });
+    const data = await r.json();
+    if (r.ok) return { ok: true, data };
+    const msg = (data && data.error && data.error.message) || "";
+    // a model that rejects one of the optional parameters: drop it and try again once
+    if (r.status === 400 && /reasoning_effort/i.test(msg) && payload.reasoning_effort) { payload = Object.assign({}, payload); delete payload.reasoning_effort; continue; }
+    if (r.status === 400 && /response_format/i.test(msg) && payload.response_format) { payload = Object.assign({}, payload); delete payload.response_format; continue; }
+    return { ok: false, status: r.status, message: msg || "Erro na API da OpenAI." };
+  }
+  return { ok: false, status: 500, message: "Não foi possível montar a requisição." };
 }
 
 module.exports = async (req, res) => {
@@ -43,22 +66,13 @@ module.exports = async (req, res) => {
   while (messages.length && messages[0].role !== "user") messages.shift(); // history must open with the student
   if (!messages.length) { res.status(400).json({ error: "bad_request", message: "Requisição inválida." }); return; }
   const system = body.system.slice(0, 12000);
-  const maxTokens = Math.max(100, Math.min(Number(body.max_tokens) || 700, 2000));
+  const maxTokens = Math.max(100, Math.min(Number(body.max_tokens) || 700, 4000));
 
   try {
     if (openaiKey) {
-      const r = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: { "content-type": "application/json", "authorization": "Bearer " + openaiKey },
-        body: JSON.stringify({
-          model: OPENAI_MODEL,
-          max_completion_tokens: maxTokens,
-          response_format: { type: "json_object" },
-          messages: [{ role: "system", content: system }, ...messages]
-        })
-      });
-      const data = await r.json();
-      if (!r.ok) { res.status(r.status).json({ error: "provider_error", message: (data && data.error && data.error.message) || "Erro na API da OpenAI." }); return; }
+      const out = await openaiChat(openaiKey, system, messages, maxTokens);
+      if (!out.ok) { res.status(out.status).json({ error: "provider_error", message: out.message }); return; }
+      const data = out.data;
       const choice = data.choices && data.choices[0];
       const text = (choice && choice.message && choice.message.content) || "";
       if (choice && choice.finish_reason === "length") {
