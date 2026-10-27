@@ -4,8 +4,12 @@
 //   ANTHROPIC_API_KEY   -> uses Anthropic Messages API (ANTHROPIC_MODEL, default claude-sonnet-5-5)
 //   APP_PASSWORD        -> access code the page must send (required)
 
+// "smart" tier (activity generation): the most capable model. "fast" tier (chat replies, feedback cards,
+// translations, grading): a quick model with no reasoning, so the student is not kept waiting.
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-6-astra";
 const OPENAI_REASONING = process.env.OPENAI_REASONING || "low";
+const OPENAI_FAST_MODEL = process.env.OPENAI_FAST_MODEL || "gpt-6-luna";
+const FALLBACKS = ["gpt-5.4-mini", "gpt-4.1-mini"];
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5";
 
 function readBody(req) {
@@ -14,26 +18,32 @@ function readBody(req) {
   return body;
 }
 
-async function openaiChat(key, system, messages, maxTokens) {
-  const base = { model: OPENAI_MODEL, max_completion_tokens: maxTokens, messages: [{ role: "system", content: system }, ...messages] };
-  const extras = { response_format: { type: "json_object" } };
-  if (/^(gpt-5|gpt-6|o\d)/.test(OPENAI_MODEL) && OPENAI_REASONING !== "none") extras.reasoning_effort = OPENAI_REASONING;
-  let payload = Object.assign({}, base, extras);
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const r = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: { "content-type": "application/json", "authorization": "Bearer " + key },
-      body: JSON.stringify(payload)
-    });
-    const data = await r.json();
-    if (r.ok) return { ok: true, data };
-    const msg = (data && data.error && data.error.message) || "";
-    // a model that rejects one of the optional parameters: drop it and try again once
-    if (r.status === 400 && /reasoning_effort/i.test(msg) && payload.reasoning_effort) { payload = Object.assign({}, payload); delete payload.reasoning_effort; continue; }
-    if (r.status === 400 && /response_format/i.test(msg) && payload.response_format) { payload = Object.assign({}, payload); delete payload.response_format; continue; }
-    return { ok: false, status: r.status, message: msg || "Erro na API da OpenAI." };
+async function openaiChat(key, system, messages, maxTokens, tier) {
+  const first = tier === "fast" ? OPENAI_FAST_MODEL : OPENAI_MODEL;
+  const models = [first].concat(FALLBACKS).filter((m, i, a) => a.indexOf(m) === i);
+  let last = { ok: false, status: 500, message: "Não foi possível montar a requisição." };
+  for (const model of models) {
+    let payload = { model, max_completion_tokens: maxTokens, messages: [{ role: "system", content: system }, ...messages], response_format: { type: "json_object" } };
+    if (tier !== "fast" && /^(gpt-5|gpt-6|o\d)/.test(model) && OPENAI_REASONING !== "none") payload.reasoning_effort = OPENAI_REASONING;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "content-type": "application/json", "authorization": "Bearer " + key },
+        body: JSON.stringify(payload)
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok) return { ok: true, data };
+      const msg = (data && data.error && data.error.message) || "";
+      last = { ok: false, status: r.status, message: msg || "Erro na API da OpenAI." };
+      // a model that rejects one of the optional parameters: drop it and try again
+      if (r.status === 400 && /reasoning_effort/i.test(msg) && payload.reasoning_effort) { payload = Object.assign({}, payload); delete payload.reasoning_effort; continue; }
+      if (r.status === 400 && /response_format/i.test(msg) && payload.response_format) { payload = Object.assign({}, payload); delete payload.response_format; continue; }
+      break;
+    }
+    // only move on to the next model when this one does not exist / is not available to the account
+    if (!(last.status === 404 || /model/i.test(last.message))) return last;
   }
-  return { ok: false, status: 500, message: "Não foi possível montar a requisição." };
+  return last;
 }
 
 module.exports = async (req, res) => {
@@ -70,7 +80,7 @@ module.exports = async (req, res) => {
 
   try {
     if (openaiKey) {
-      const out = await openaiChat(openaiKey, system, messages, maxTokens);
+      const out = await openaiChat(openaiKey, system, messages, maxTokens, body.tier === "fast" ? "fast" : "smart");
       if (!out.ok) { res.status(out.status).json({ error: "provider_error", message: out.message }); return; }
       const data = out.data;
       const choice = data.choices && data.choices[0];

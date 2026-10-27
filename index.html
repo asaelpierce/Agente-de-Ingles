@@ -94,7 +94,10 @@ textarea { flex: 1; min-width: 0; resize: none; font: inherit; padding: 10px 12p
 .send { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: var(--radius); padding: 0 16px; height: 44px; font-weight: 600; }
 .send:disabled, .call:disabled { opacity: .5; cursor: default; }
 .call { height: 44px; min-width: 0; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 0 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
-.call .dot { flex: none; }
+.call .dot { flex: none; transition: transform .08s linear; transform: scale(calc(1 + var(--lvl, 0) * 1.4)); }
+.call[data-state="hearing"] .dot { background: var(--good); }
+.call[data-state="connecting"] .dot { background: var(--warn); animation: blink .6s infinite alternate; }
+.bubble.interim-b { opacity: .75; font-style: italic; }
 .statusrow { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
 .ghost.small { font-size: 12px; padding: 3px 8px; white-space: nowrap; }
 @media (max-width: 600px) {
@@ -193,6 +196,8 @@ aside .saved span.ptw { color: var(--muted); }
     <select id="voiceKind"><option value="natural" selected>natural (IA)</option><option value="browser">do navegador</option></select>
     <label for="rate">Velocidade</label>
     <select id="rate"><option value="0.8">lenta</option><option value="0.95" selected>normal</option><option value="1.1">rápida</option></select>
+    <label for="engine">Chamada</label>
+    <select id="engine"><option value="realtime" selected>tempo real</option><option value="classic">clássica</option></select>
     <label for="auto">Ler respostas</label>
     <select id="auto"><option value="1" selected>sim</option><option value="0">não</option></select>
     <span class="xpchip" id="xpChip"></span>
@@ -252,7 +257,7 @@ aside .saved span.ptw { color: var(--muted); }
   const log = $("#log"), input = $("#input"), sendBtn = $("#send"), callBtn = $("#call"), callLabel = $("#callLabel"), status = $("#status");
   const scenariosBar = $("#scenarios");
   let mode = "chat", scenario = null, turns = [], busy = false, ctl = null;
-  let callActive = false, speaking = false, interimEl = null;
+  let callActive = false, speaking = false;
   const stats = { msgs: 0, fix: 0, quizOk: 0, quizN: 0 };
   let saved = [], code = "";
   try { saved = JSON.parse(localStorage.getItem("tec_saved") || "[]"); code = localStorage.getItem("tec_code") || ""; } catch (e) {}
@@ -312,8 +317,8 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     const a = text.indexOf("{"), b = text.lastIndexOf("}"); if (a >= 0 && b > a) { try { return JSON.parse(text.slice(a, b + 1)); } catch (e) {} }
     return null;
   }
-  async function callApi(system, messages, max_tokens, signal) {
-    const r = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ system, messages, max_tokens }), signal });
+  async function callApi(system, messages, max_tokens, signal, tier) {
+    const r = await fetch("/api/chat", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ system, messages, max_tokens, tier: tier || "smart" }), signal });
     const data = await r.json().catch(() => ({}));
     if (!r.ok) { const e = new Error(data.message || "Erro"); e.code = data.error || "http_" + r.status; throw e; }
     return data.text || "";
@@ -378,79 +383,274 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     stopAudio(); stopListening();
     const id = ++speakSeq;
     speaking = true; setCallState("speaking");
-    const done = () => { if (id !== speakSeq || !speaking) return; speaking = false; if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; } if (onDone) onDone(); else if (callActive) startListening(); };
+    if (rt) rtMute(true);
+    const done = () => { if (id !== speakSeq || !speaking) return; speaking = false; if (rt) rtMute(false); if (audioUrl) { URL.revokeObjectURL(audioUrl); audioUrl = null; } if (onDone) onDone(); else if (callActive) startListening(); };
     if ($("#voiceKind").value === "natural" && naturalAvailable) speakNatural(text, done, id); else speakBrowser(text, done, id);
   }
 
-  // ---------- speech recognition (continuous call mode) ----------
-  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let rec = null, listening = false, restartTimer = null, recOnce = null;
-  function listenOnce(onFinal, onInterim) {
-    if (!rec) { onFinal(""); return false; }
-    stopAudio(); speaking = false; stopListening(); unlockAudio();
-    recOnce = { onFinal, onInterim };
-    try { rec.start(); listening = true; return true; } catch (e) { recOnce = null; listening = false; onFinal(""); return false; }
+  // ---------- microphone: recorder + OpenAI transcription (replaces the browser's own recognizer) ----------
+  const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  const rec = canRecord; // truthy when voice input is possible (the exercises check it)
+  let listening = false, recSession = null, micStream = null;
+  async function getMic() {
+    if (micStream && micStream.getAudioTracks().some(t => t.readyState === "live")) return micStream;
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+    return micStream;
   }
+  function releaseMic() { if (micStream) { micStream.getTracks().forEach(t => t.stop()); micStream = null; } }
+  function micError(e) {
+    const n = e && e.name;
+    if (n === "NotAllowedError" || n === "SecurityError") setStatus("O navegador bloqueou o microfone. Clique no cadeado ao lado do endereço do site, permita o microfone e tente de novo.", true);
+    else if (n === "NotFoundError" || n === "OverconstrainedError") setStatus("Nenhum microfone encontrado. Confira se o fone/microfone está conectado.", true);
+    else if (n === "NotReadableError") setStatus("O microfone está em uso por outro programa (Teams, Zoom...). Feche-o e tente de novo.", true);
+    else setStatus("Não consegui usar o microfone: " + ((e && e.message) || e), true);
+  }
+  function pickMime() {
+    const c = ["audio/webm;codecs=opus", "audio/webm", "audio/mp4", "audio/ogg;codecs=opus"];
+    for (const m of c) { try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) {} }
+    return "";
+  }
+  function blobToBase64(blob) { return new Promise((ok, bad) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] || ""); r.onerror = bad; r.readAsDataURL(blob); }); }
+  async function transcribe(blob, language) {
+    const audio = await blobToBase64(blob);
+    const r = await fetch("/api/stt", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ audio, mime: blob.type, language }) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { const e = new Error(data.message || "Erro"); e.code = data.error || "http_" + r.status; throw e; }
+    return data.text || "";
+  }
+  // Records one utterance: starts at once, stops after `silenceMs` of quiet once speech was heard
+  // (or after maxMs, or after 12 s with no speech at all). Resolves a Blob, or null when nothing was said.
+  async function recordUtterance(opts) {
+    const { silenceMs = 1600, maxMs = 30000, onSpeech } = opts || {};
+    const stream = await getMic();
+    const mime = pickMime();
+    const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    const chunks = [];
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = AC ? new AC() : null; let an = null, buf = null;
+    if (ctx) { try { ctx.resume(); const src = ctx.createMediaStreamSource(stream); an = ctx.createAnalyser(); an.fftSize = 1024; src.connect(an); buf = new Uint8Array(an.fftSize); } catch (e) { an = null; } }
+    return new Promise((resolve) => {
+      let spoke = !an, lastVoice = Date.now(), noise = 0.012, stopped = false, timer = 0, discard = false;
+      const start = Date.now();
+      const done = () => { clearInterval(timer); try { ctx && ctx.close(); } catch (e) {} listening = false; recSession = null; resolve(!discard && spoke && chunks.length ? new Blob(chunks, { type: mr.mimeType || mime || "audio/webm" }) : null); };
+      const finish = () => { if (stopped) return; stopped = true; clearInterval(timer); try { mr.stop(); } catch (e) { done(); } };
+      mr.ondataavailable = (e) => { if (e.data && e.data.size) chunks.push(e.data); };
+      mr.onstop = done;
+      timer = setInterval(() => {
+        const now = Date.now();
+        if (an) {
+          an.getByteTimeDomainData(buf); let sum = 0; for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; sum += v * v; }
+          const rms = Math.sqrt(sum / buf.length);
+          if (!spoke && now - start < 500) noise = Math.max(0.006, noise * 0.8 + rms * 0.2); // learn the room's background level
+          if (rms > Math.max(0.018, noise * 2.2)) { if (!spoke) { spoke = true; onSpeech && onSpeech(); } lastVoice = now; }
+        }
+        if ((spoke && an && now - lastVoice > silenceMs) || now - start > maxMs || (!spoke && now - start > 12000)) finish();
+      }, 50);
+      recSession = { stop: finish, cancel: () => { discard = true; finish(); } };
+      listening = true; mr.start(250);
+    });
+  }
+  function finishListening() { if (recSession) recSession.stop(); }   // stop and keep what was recorded
+  function stopListening() { if (recSession) recSession.cancel(); listening = false; } // stop and discard
+  function listenOnce(onFinal, onInterim) {
+    if (!canRecord) { onFinal(""); return false; }
+    stopAudio(); speaking = false; stopListening(); unlockAudio();
+    if (onInterim) onInterim("Pode falar");
+    recordUtterance({ silenceMs: 1300, maxMs: 15000, onSpeech: () => onInterim && onInterim("Ouvindo você") })
+      .then(async (blob) => {
+        if (!blob) { onFinal(""); return; }
+        if (onInterim) onInterim("Transcrevendo");
+        try { onFinal(await transcribe(blob, "en")); } catch (e) { setStatus(copyFor(e), true); onFinal(""); }
+      })
+      .catch((e) => { micError(e); onFinal(""); });
+    return true;
+  }
+
+  // ---------- microphone level meter on the call button (so you can see the mic is picking you up) ----------
+  let meter = null;
+  function startMeter(stream) {
+    stopMeter();
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC || !stream) return;
+    try {
+      const ctx = new AC(); ctx.resume(); const src = ctx.createMediaStreamSource(stream); const an = ctx.createAnalyser(); an.fftSize = 512; src.connect(an);
+      const buf = new Uint8Array(an.fftSize);
+      const t = setInterval(() => { an.getByteTimeDomainData(buf); let s = 0; for (let i = 0; i < buf.length; i++) { const v = (buf[i] - 128) / 128; s += v * v; } callBtn.style.setProperty("--lvl", Math.min(1, Math.sqrt(s / buf.length) * 8).toFixed(2)); }, 80);
+      meter = { ctx, t };
+    } catch (e) {}
+  }
+  function stopMeter() { if (meter) { clearInterval(meter.t); try { meter.ctx.close(); } catch (e) {} meter = null; } callBtn.style.setProperty("--lvl", "0"); }
+
   function setCallState(s) {
     callBtn.dataset.state = callActive ? s : "idle";
-    callLabel.textContent = !callActive ? "Conversar por voz" : s === "listening" ? "Ouvindo (clique para encerrar)" : s === "speaking" ? "Coach falando" : s === "thinking" ? "Pensando" : "Em chamada";
+    callLabel.textContent = !callActive ? "Conversar por voz" : ({ connecting: "Conectando...", listening: "Pode falar (clique para encerrar)", hearing: "Ouvindo você...", thinking: "Pensando...", speaking: "Coach falando" })[s] || "Em chamada";
   }
-  function startListening() {
-    if (!callActive || !rec || listening || speaking || busy) return;
-    try { rec.start(); listening = true; setCallState("listening"); }
-    catch (e) { listening = false; }
+
+  // ---------- realtime voice call (OpenAI Realtime over WebRTC: speech in, speech out, ~1 s latency) ----------
+  let rt = null; // { pc, dc, audio }
+  const rtMe = {}, rtCoach = {}; // bubbles by item / response id
+  let lastCoachLine = "";
+  function voiceInstructions() {
+    const lvl = $("#level").value, slow = parseFloat($("#rate").value) < 0.9;
+    const pace = slow ? "slowly, with short pauses between phrases" : "at a calm, clear pace";
+    const size = lvl === "A1" ? "Use very short sentences (at most 8 words) and only basic words." : lvl === "A2" ? "Use short sentences and common words; explain a tech word with an easy example if needed." : "Use natural workplace English.";
+    let task;
+    if (mode === "sim") { const s = SCENARIOS.sim.find(x => x[0] === scenario) || SCENARIOS.sim[0]; task = `This is a role-play. ${s[2]} Stay in character the whole time. Start the scene now with your first line.`; }
+    else if (mode === "gram") { const s = SCENARIOS.gram.find(x => x[0] === scenario) || SCENARIOS.gram[0]; task = `This is a short spoken grammar/pronunciation lesson. Topic: ${s[2]} Teach one small point at a time with tiny IT examples, then ask the student to say a sentence. Start now with a quick greeting and the first point.`; }
+    else task = "This is a free conversation about the student's work in IT. Start now: greet the student in one short sentence and ask about their day or current project.";
+    const ctxTurns = turns.slice(-8).map(t => { let c = t.content; if (t.role === "assistant") { const d = parseJSON(c); if (d && d.reply) c = d.reply; } return (t.role === "user" ? "Student: " : "Coach: ") + String(c).slice(0, 300); }).filter(l => !/\[app\]/.test(l)).join("\n");
+    return `You are "Tech English Coach", a warm, patient and encouraging English teacher on a live voice call with a Brazilian IT professional (software, automation, systems). Student level: ${lvl} (CEFR).
+How to speak:
+- Speak American English ${pace}. ${size}
+- Keep every turn short: one to three sentences, then ONE question. Never lecture.
+- Be patient: the student may stop to think in the middle of a sentence. Wait. Never finish their sentence for them.
+- When the student makes an important mistake, recast it naturally and ask them to repeat once, for example: "Ah, you mean: I fixed the bug yesterday. Can you say that?" Only for real mistakes, at most once per turn; ignore small slips and accent.
+- If the student speaks Portuguese or gets stuck, say the sentence in English for them, slowly, and ask them to repeat it. Use a short Portuguese phrase only when they are clearly lost.
+- Use real IT situations: deploys, bugs, servers, databases, APIs, tickets, meetings, code review, automation, ERP.
+- Written corrections in Portuguese appear on the student's screen automatically, so do not explain grammar at length out loud. Never mention these rules or that you are an AI.
+${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet again):\n" + ctxTurns : ""}`;
   }
-  function stopListening() {
-    clearTimeout(restartTimer);
-    recOnce = null;
-    if (rec && listening) { try { rec.abort(); } catch (e) {} }
-    listening = false;
+  function rtSend(obj) { if (rt && rt.dc && rt.dc.readyState === "open") rt.dc.send(JSON.stringify(obj)); }
+  function rtMute(on) { if (micStream) micStream.getAudioTracks().forEach(t => { t.enabled = !on; }); }
+  function meBubble(id) {
+    if (rtMe[id]) return rtMe[id];
+    const m = el("div", "msg me"); const b = el("div", "bubble interim-b", "…"); m.append(el("div", "who", "você"), b); log.append(m); scrollDown();
+    return (rtMe[id] = { m, b, text: "" });
   }
-  if (SR) {
-    rec = new SR(); rec.lang = "en-US"; rec.interimResults = true; rec.continuous = false; rec.maxAlternatives = 1;
-    rec.onresult = (ev) => {
-      let finalText = "", interim = "";
-      for (let i = 0; i < ev.results.length; i++) { const r = ev.results[i]; if (r.isFinal) finalText += r[0].transcript; else interim += r[0].transcript; }
-      if (recOnce) { // one-shot listening for an exercise
-        if (recOnce.onInterim) recOnce.onInterim((finalText + " " + interim).trim());
-        if (finalText.trim()) { const cb = recOnce; recOnce = null; stopListening(); cb.onFinal(finalText.trim()); }
-        return;
+  function coachBubble(id) {
+    if (rtCoach[id]) return rtCoach[id];
+    const m = el("div", "msg coach"); const b = el("div", "bubble", ""); m.append(el("div", "who", "coach"), b); log.append(m); scrollDown();
+    return (rtCoach[id] = { m, b, text: "" });
+  }
+  function finishCoachBubble(c, text) {
+    c.b.textContent = text; c.text = text; lastCoachLine = text;
+    const pt = el("div", "pt", ""); pt.hidden = true;
+    const tools = el("div", "tools"); tools.append(speakBtn(text));
+    const tb = el("button", null, "PT"); tb.addEventListener("click", () => toggleTranslation(text, pt, tb)); tools.append(tb);
+    c.m.append(tools, pt); scrollDown();
+  }
+  async function toggleTranslation(text, pt, btn) {
+    if (pt.textContent) { pt.hidden = !pt.hidden; return; }
+    btn.disabled = true; pt.hidden = false; pt.textContent = "Traduzindo...";
+    try { const t = await callApi('Translate the English text to natural Brazilian Portuguese. Reply with ONLY JSON: {"pt": "..."}', [{ role: "user", content: text }], 300, undefined, "fast"); const d = parseJSON(t) || {}; pt.textContent = d.pt || t; }
+    catch (e) { pt.textContent = copyFor(e); setTimeout(() => { pt.textContent = ""; pt.hidden = true; }, 2500); }
+    finally { btn.disabled = false; }
+  }
+  function onRtEvent(ev) {
+    switch (ev.type) {
+      case "input_audio_buffer.speech_started": setCallState("hearing"); if (ev.item_id) meBubble(ev.item_id); break;
+      case "input_audio_buffer.speech_stopped": setCallState("thinking"); break;
+      case "conversation.item.input_audio_transcription.delta": { const x = meBubble(ev.item_id); x.text += ev.delta || ""; x.b.textContent = x.text + "…"; break; }
+      case "conversation.item.input_audio_transcription.completed": {
+        const x = meBubble(ev.item_id); const t = String(ev.transcript || "").trim();
+        x.b.classList.remove("interim-b");
+        if (!t) { x.m.remove(); delete rtMe[ev.item_id]; break; }
+        x.b.textContent = t; x.text = t; stats.msgs++; bump(); turns.push({ role: "user", content: t });
+        requestFeedback(t, lastCoachLine, x.m);
+        break;
       }
-      if (!interimEl) { interimEl = el("div", "interim"); log.append(interimEl); }
-      interimEl.textContent = (finalText + " " + interim).trim() + "…"; scrollDown();
-      if (finalText.trim()) { stopListening(); if (interimEl) { interimEl.remove(); interimEl = null; } submit(finalText.trim()); }
-    };
-    rec.onend = () => {
-      listening = false;
-      if (interimEl) { interimEl.remove(); interimEl = null; }
-      if (recOnce) { const cb = recOnce; recOnce = null; cb.onFinal(""); return; }
-      if (callActive && !speaking && !busy) restartTimer = setTimeout(startListening, 250);
-    };
-    rec.onerror = (ev) => {
-      listening = false;
-      if (ev.error === "not-allowed" || ev.error === "service-not-allowed") { endCall(); setStatus("O navegador bloqueou o microfone. Permita o acesso ao microfone para este site e tente de novo.", true); }
-      else if (ev.error === "audio-capture") { endCall(); setStatus("Nenhum microfone encontrado.", true); }
-      else if (ev.error === "network") { endCall(); setStatus("O reconhecimento de voz precisa de internet e de Chrome/Edge.", true); }
-      // "no-speech" and "aborted" are normal: onend restarts the loop
-    };
-  } else {
-    callBtn.disabled = true; callBtn.title = "Reconhecimento de voz não disponível neste navegador. Use Chrome ou Edge.";
+      case "conversation.item.input_audio_transcription.failed": { const x = meBubble(ev.item_id); x.b.classList.remove("interim-b"); x.b.textContent = "(não consegui transcrever esta fala)"; break; }
+      case "response.output_audio_transcript.delta": { setCallState("speaking"); const c = coachBubble(ev.response_id || ev.item_id); c.text += ev.delta || ""; c.b.textContent = c.text; scrollDown(); break; }
+      case "response.output_audio_transcript.done": { const c = coachBubble(ev.response_id || ev.item_id); const t = String(ev.transcript || c.text).trim(); finishCoachBubble(c, t); turns.push({ role: "assistant", content: JSON.stringify({ reply: t }) }); break; }
+      case "response.done": { setCallState("listening"); const st = ev.response && ev.response.status; if (st === "failed") { const d = ev.response.status_details; setStatus("O coach não conseguiu responder: " + ((d && d.error && d.error.message) || "erro"), true); } break; }
+      case "error": { const m = ev.error && ev.error.message; if (m && !/no active response|cancel/i.test(m)) setStatus("Voz: " + m, true); break; }
+    }
   }
+  function teardownRealtime() {
+    if (!rt) return;
+    try { rt.dc && rt.dc.close(); } catch (e) {}
+    try { rt.pc && rt.pc.close(); } catch (e) {}
+    try { rt.audio.srcObject = null; rt.audio.remove(); } catch (e) {}
+    rt = null;
+    for (const k in rtMe) delete rtMe[k]; for (const k in rtCoach) delete rtCoach[k];
+  }
+  async function startRealtime() {
+    const r = await fetch("/api/realtime", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ instructions: voiceInstructions(), eagerness: "low" }) });
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok || !data.value) { const e = new Error(data.message || "falha ao abrir a sessão"); e.code = data.error || "http_" + r.status; throw e; }
+    const stream = await getMic();
+    const pc = new RTCPeerConnection();
+    const audio = document.createElement("audio"); audio.autoplay = true; audio.setAttribute("playsinline", ""); audio.hidden = true; document.body.append(audio);
+    rt = { pc, dc: null, audio };
+    pc.ontrack = (e) => { audio.srcObject = e.streams[0]; audio.play().catch(() => {}); };
+    stream.getAudioTracks().forEach(t => pc.addTrack(t, stream));
+    const dc = pc.createDataChannel("oai-events"); rt.dc = dc;
+    dc.onmessage = (e) => { let ev; try { ev = JSON.parse(e.data); } catch (x) { return; } onRtEvent(ev); };
+    pc.onconnectionstatechange = () => {
+      if (rt && rt.pc === pc && (pc.connectionState === "failed" || pc.connectionState === "disconnected")) {
+        endCall(); setStatus("A conexão de voz caiu. Clique em Conversar por voz para reconectar.", true);
+      }
+    };
+    const opened = new Promise((ok, bad) => { dc.onopen = ok; dc.onerror = () => bad(new Error("canal de dados falhou")); });
+    const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
+    const sdp = await fetch("https://api.openai.com/v1/realtime/calls", { method: "POST", body: offer.sdp, headers: { Authorization: "Bearer " + data.value, "Content-Type": "application/sdp" } });
+    if (!sdp.ok) { let m = ""; try { m = (await sdp.json()).error.message; } catch (e) {} throw new Error("a OpenAI recusou a conexão" + (m ? ": " + m : " (" + sdp.status + ")")); }
+    await pc.setRemoteDescription({ type: "answer", sdp: await sdp.text() });
+    await opened;
+    setCallState("thinking");
+    rtSend({ type: "response.create" }); // the coach opens the conversation
+  }
+  function withTimeout(p, ms, label) { return Promise.race([p, new Promise((_, bad) => setTimeout(() => bad(new Error(label || "tempo esgotado")), ms))]); }
+
+  // ---------- feedback cards for spoken turns (fast model, runs in parallel with the voice) ----------
+  const FEEDBACK_RULES = () => `You review ONE thing a Brazilian IT professional (CEFR ${$("#level").value}) just SAID in English during a voice lesson. The text is an automatic speech transcript: ignore punctuation, capitalization, filler words (uh, um), repetitions and small transcription slips.
+Reply with ONLY JSON: {"correction": null or {"original": "the wrong part", "fixed": "corrected English", "why_pt": "short explanation in Portuguese"}, "tip_pt": "", "praise_pt": ""}
+Rules: "correction" only for a REAL grammar or vocabulary mistake, the single most important one; correct English that is merely different is not a mistake. If correction is set, praise_pt MUST be empty. praise_pt only for something specific done well (short, Portuguese). tip_pt only if it adds a useful NEW word or expression for what the student was trying to say, never repeating the correction. Most utterances get at most one item and many get none (use null / empty strings). If the student spoke Portuguese, use correction with original = what they said, fixed = a natural English version, why_pt = "Em inglês, diga assim."`;
+  async function requestFeedback(student, coachBefore, anchor) {
+    if (!student || student.split(/\s+/).length < 2) return;
+    try {
+      const text = await callApi(FEEDBACK_RULES(), [{ role: "user", content: (coachBefore ? `Coach said: "${coachBefore}"\n` : "") + `Student said: "${student}"` }], 400, undefined, "fast");
+      const d = parseJSON(text); if (!d) return;
+      const nodes = feedbackCards(d);
+      let at = anchor; nodes.forEach(n => { at.after(n); at = n; });
+      bump();
+    } catch (e) { /* feedback is a bonus: never interrupt the call for it */ }
+  }
+
+  // ---------- classic voice loop (backup when the realtime connection is blocked, e.g. by a company firewall) ----------
+  async function classicListen() {
+    if (!callActive || rt || busy || speaking || listening) return;
+    setCallState("listening");
+    let blob;
+    try { blob = await recordUtterance({ silenceMs: 1800, onSpeech: () => setCallState("hearing") }); }
+    catch (e) { micError(e); endCall(); return; }
+    if (!callActive || rt) return;
+    if (!blob) { setTimeout(classicListen, 100); return; } // nothing said: keep listening
+    setCallState("thinking");
+    try { const t = await transcribe(blob); if (!callActive) return; if (t) submit(t); else classicListen(); }
+    catch (e) { setStatus(copyFor(e), true); if (callActive) setTimeout(classicListen, 800); }
+  }
+  function startListening() { if (callActive && !rt) classicListen(); }
+
   function endCall() {
-    callActive = false; callBtn.setAttribute("aria-pressed", "false"); stopListening();
+    callActive = false; callBtn.setAttribute("aria-pressed", "false");
+    teardownRealtime(); stopListening(); stopMeter(); releaseMic();
     speaking = false; stopAudio(); setCallState("idle");
   }
-  callBtn.addEventListener("click", () => {
+  if (!canRecord) { callBtn.disabled = true; callBtn.title = "Este navegador não dá acesso ao microfone. Use Chrome ou Edge atualizados."; }
+  callBtn.addEventListener("click", async () => {
     if (callActive) { endCall(); setStatus("Chamada encerrada."); return; }
     if (!code) { showGate(); return; }
     if (mode === "vocab" || mode === "tasks") { setStatus("Neste modo, use os botões do próprio exercício. A chamada por voz é para Conversa, Simulação e Gramática."); return; }
-    unlockAudio();
-    callActive = true; callBtn.setAttribute("aria-pressed", "true");
-    setStatus("Fale em inglês. Quando terminar a frase, espere: o coach responde e volta a ouvir.");
-    if (!turns.length) {
-      // ask for the microphone inside the tap (browsers want the permission prompt gesture-driven), then open the scene
-      try { rec.start(); listening = true; setTimeout(() => { stopListening(); startScene(); }, 400); } catch (e) { startScene(); }
-    } else startListening();
+    unlockAudio(); cancelPending(); stopAudio();
+    callActive = true; callBtn.setAttribute("aria-pressed", "true"); setCallState("connecting"); setStatus("");
+    try { await getMic(); } catch (e) { micError(e); endCall(); return; }
+    if (!callActive) return;
+    startMeter(micStream);
+    if (!turns.length) { const empty = log.querySelector(".empty"); if (empty) log.textContent = ""; }
+    if ($("#engine").value !== "classic" && window.RTCPeerConnection) {
+      try {
+        await withTimeout(startRealtime(), 15000, "a conexão demorou demais");
+        if (!callActive) { teardownRealtime(); return; }
+        setStatus("Conectado. Fale normalmente; pode pensar com calma e até interromper o coach.");
+        return;
+      } catch (e) {
+        teardownRealtime();
+        if (!callActive) return;
+        if (e && (e.code === "bad_code" || e.code === "no_api_key" || e.code === "no_password")) { setStatus(copyFor(e), true); endCall(); if (e.code === "bad_code") showGate(); return; }
+        setStatus("Tempo real indisponível (" + ((e && e.message) || e) + "). Usando o modo clássico.", true);
+      }
+    }
+    if (!turns.length) startScene(); else classicListen();
   });
 
   // ---------- rendering ----------
@@ -470,15 +670,20 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     const tools = el("div", "tools"); tools.append(speakBtn(d.reply));
     const tb = el("button", null, "PT"); tb.addEventListener("click", () => { pt.hidden = !pt.hidden; }); tools.append(tb);
     m.append(tools, pt); log.append(m);
+    feedbackCards(d).forEach(n => log.append(n));
+    bump(); scrollDown();
+  }
+  function feedbackCards(d) {
+    const out = [];
     if (d.correction && d.correction.fixed) {
       stats.fix++;
       const c = el("div", "card fix"); c.append(el("div", "label", "correção"));
       const line = el("div"); line.append(el("s", null, d.correction.original || ""), " → ", el("b", null, d.correction.fixed)); c.append(line, el("div", null, d.correction.why_pt || ""));
-      const t = el("div", "tools"); t.append(speakBtn(d.correction.fixed), saveBtn(d.correction.fixed, "")); c.append(t); log.append(c);
+      const t = el("div", "tools"); t.append(speakBtn(d.correction.fixed), saveBtn(d.correction.fixed, "")); c.append(t); out.push(c);
     }
-    if (d.praise_pt) { const p = el("div", "card ok"); p.append(el("div", "label", "mandou bem"), el("div", null, d.praise_pt)); log.append(p); }
-    if (d.tip_pt) { const p = el("div", "card tip"); p.append(el("div", "label", "dica"), el("div", null, d.tip_pt)); log.append(p); }
-    bump(); scrollDown();
+    if (d.praise_pt && !(d.correction && d.correction.fixed)) { const p = el("div", "card ok"); p.append(el("div", "label", "mandou bem"), el("div", null, d.praise_pt)); out.push(p); }
+    if (d.tip_pt) { const p = el("div", "card tip"); p.append(el("div", "label", "dica"), el("div", null, d.tip_pt)); out.push(p); }
+    return out;
   }
   function addThinking() { const t = el("div", "msg coach"); t.append(el("div", "who", "coach"), el("div", "bubble thinking", "Pensando...")); log.append(t); scrollDown(); return t; }
 
@@ -489,7 +694,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     turns.push({ role: "user", content: userText });
     try {
       const myCtl = ctl;
-      const text = await callApi(modeRules(), turns.slice(-15), 700, myCtl.signal); // odd window: always opens with a student turn
+      const text = await callApi(modeRules(), turns.slice(-15), 700, myCtl.signal, "fast"); // odd window: always opens with a student turn
       if (myCtl !== ctl) return; // superseded by a newer request
       think.remove();
       const data = parseJSON(text);
@@ -530,7 +735,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     const prompt = `Topic: "${topic[1]}" (IT / software work). Give 8 useful English words or short expressions for this topic that a Brazilian would actually need at work. Prefer words Brazilians often get wrong or say in "Portuguese-English".
 Shape: {"terms":[{"en":"word or expression","ipa":"simple IPA","pt":"tradução em português","ex":"short example sentence from IT work","note_pt":"short note in Portuguese: common mistake, false friend or pronunciation tip"}], "quiz":[{"q":"question in Portuguese asking how to say something or the meaning of a term","opts":["A","B","C"],"a":0,"why_pt":"explanation in Portuguese"}]}
 The quiz has 4 questions about these terms. "a" is the index of the correct option.`;
-    try { const text = await callApi(system, [{ role: "user", content: prompt }], 1800, myCtl.signal); if (myCtl !== ctl) return; think.remove(); const data = parseJSON(text) || {}; renderVocab(topic[1], data); }
+    try { const text = await callApi(system, [{ role: "user", content: prompt }], 1800, myCtl.signal, "fast"); if (myCtl !== ctl) return; think.remove(); const data = parseJSON(text) || {}; renderVocab(topic[1], data); }
     catch (e) { if (e && e.name === "AbortError") return; think.remove(); const m = copyFor(e); if (m) setStatus(m, true); }
     finally { if (myCtl === ctl) { busy = false; sendBtn.disabled = false; } }
   }
@@ -664,7 +869,7 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
       const ok = () => { const v = inp.value.trim(); if (!v) return; const s = wordSim(v, ex.answer); finish(s >= 0.85 ? 1 : s >= 0.6 ? 0.5 : 0, el("div", "said", "Você escreveu: " + v)); };
       inp.addEventListener("keydown", (e) => { if (e.key === "Enter") ok(); });
       actions.append(hearBtn(ex.answer), checkBtn(ok));
-      setTimeout(() => speak(ex.answer), 300);
+      setTimeout(() => { if (!listening) speak(ex.answer); }, 300);
     } else if (ex.type === "repeat") {
       const t = el("div", "text", ex.answer); box.append(t);
       const said = el("div", "said", rec ? "Clique em Falar e repita a frase." : "Seu navegador não tem reconhecimento de voz; use Chrome ou Edge. Você pode digitar a frase para treinar a escrita."); box.append(said);
@@ -672,13 +877,13 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
       const grade = (v) => { if (!v) { said.textContent = "Não entendi. Tente de novo, mais perto do microfone."; return; } const s = wordSim(v, ex.answer); finish(s >= 0.85 ? 1 : s >= 0.6 ? 0.5 : 0, el("div", "said", "Você disse: " + v)); };
       const mic = el("button", "btn rec", "🎤 Falar"); if (!rec) mic.disabled = true;
       mic.addEventListener("click", () => {
-        if (listening) { stopListening(); mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎤 Falar"; return; }
+        if (listening) { finishListening(); mic.textContent = "Transcrevendo..."; return; }
         mic.setAttribute("aria-pressed", "true"); mic.textContent = "Ouvindo... (clique para parar)"; said.textContent = "Fale agora.";
-        listenOnce((finalText) => { mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎤 Falar"; grade(finalText); }, (txt) => { said.textContent = txt + "…"; });
+        listenOnce((finalText) => { mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎤 Falar"; said.textContent = ""; grade(finalText); }, (txt) => { said.textContent = txt + "…"; });
       });
       inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && inp.value.trim()) grade(inp.value.trim()); });
       actions.append(hearBtn(ex.answer), mic, checkBtn(() => { if (inp.value.trim()) grade(inp.value.trim()); }));
-      setTimeout(() => speak(ex.answer), 300);
+      setTimeout(() => { if (!listening) speak(ex.answer); }, 300);
     } else if (ex.type === "translate") {
       box.append(el("div", "text", ex.text || ""));
       const inp = textInput(); inp.placeholder = "escreva em inglês"; box.append(inp);
@@ -690,7 +895,7 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
         [...actions.querySelectorAll("button")].forEach(b => b.disabled = true); setStatus("Corrigindo...");
         try {
           const text = await callApi(`You grade an English translation written by a Brazilian IT professional (CEFR ${$("#level").value}). Reply with ONLY JSON: {"ok": true|false, "near": true|false, "why_pt": "one short sentence in Portuguese"}. ok = correct and natural even if different from the reference; near = understandable but with a mistake.`,
-            [{ role: "user", content: `Portuguese: ${ex.text}\nReference: ${ex.answer}\nStudent: ${v}` }], 200);
+            [{ role: "user", content: `Portuguese: ${ex.text}\nReference: ${ex.answer}\nStudent: ${v}` }], 200, undefined, "fast");
           const g = parseJSON(text) || {}; setStatus("");
           const d = el("div"); d.append(el("div", "said", "Você escreveu: " + v)); if (g.why_pt) d.append(el("div", null, g.why_pt));
           finish(g.ok ? 1 : g.near ? 0.5 : 0, d);
@@ -746,6 +951,7 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
     list.forEach(s => { const b = el("button", "chip", s[1]); b.setAttribute("aria-pressed", String(scenario === s[0])); b.addEventListener("click", () => { scenario = s[0]; renderScenarioBar(); startScene(); }); scenariosBar.append(b); });
   }
   function startScene() {
+    if (rt) endCall();
     cancelPending(); stopAudio(); speaking = false;
     turns = []; log.textContent = "";
     if (mode === "vocab") { loadVocab(scenario || VOCAB_TOPICS[0][0]); return; }
@@ -788,7 +994,7 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
   // ---------- boot ----------
   renderSaved(); renderScenarioBar(); showEmpty(); bump(); renderProgress();
   if (!code) showGate();
-  if (!SR) setStatus("Para conversar por voz, abra este site no Chrome ou Edge. Por texto funciona em qualquer navegador.", true);
+  if (!canRecord) setStatus("Para usar o microfone, abra este site no Chrome ou Edge atualizados. Por texto funciona em qualquer navegador.", true);
 })();
 </script>
 </body>
