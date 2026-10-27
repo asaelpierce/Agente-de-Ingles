@@ -47,6 +47,9 @@ section.chat { display: flex; flex-direction: column; min-width: 0; min-height: 
 .scenario-bar { padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-bottom: 1px solid var(--line); background: var(--surface); }
 .chip { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
 .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.topicform { display: flex; gap: 6px; flex: 1 1 320px; min-width: 0; }
+.topicform input { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
+@media (max-width: 600px) { .topicform input { font-size: 16px; } }
 
 .log { flex: 1; min-height: 0; overflow-y: auto; padding-block: 16px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-direction: column; gap: 14px; }
 .msg { max-width: 68ch; display: flex; flex-direction: column; gap: 6px; }
@@ -94,6 +97,8 @@ textarea { flex: 1; min-width: 0; resize: none; font: inherit; padding: 10px 12p
 .send { background: var(--accent); color: var(--accent-fg); border: 0; border-radius: var(--radius); padding: 0 16px; height: 44px; font-weight: 600; }
 .send:disabled, .call:disabled { opacity: .5; cursor: default; }
 .call { height: 44px; min-width: 0; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 0 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.done { height: 44px; border-radius: var(--radius); border: 1px solid var(--good); background: var(--good-soft); color: var(--good); padding: 0 16px; font-weight: 600; white-space: nowrap; }
+@media (max-width: 600px) { .done { width: 100%; } }
 .call .dot { flex: none; transition: transform .08s linear; transform: scale(calc(1 + var(--lvl, 0) * 1.4)); }
 .call[data-state="hearing"] .dot { background: var(--good); }
 .call[data-state="connecting"] .dot { background: var(--warn); animation: blink .6s infinite alternate; }
@@ -196,6 +201,8 @@ aside .saved span.ptw { color: var(--muted); }
     <select id="voiceKind"><option value="natural" selected>natural (IA)</option><option value="browser">do navegador</option></select>
     <label for="rate">Velocidade</label>
     <select id="rate"><option value="0.8">lenta</option><option value="0.95" selected>normal</option><option value="1.1">rápida</option></select>
+    <label for="turn">Tempo para pensar</label>
+    <select id="turn"><option value="1200">curto (1,2 s)</option><option value="2500" selected>médio (2,5 s)</option><option value="4000">longo (4 s)</option><option value="manual">eu aviso quando terminar</option></select>
     <label for="engine">Chamada</label>
     <select id="engine"><option value="realtime" selected>tempo real</option><option value="classic">clássica</option></select>
     <label for="auto">Ler respostas</label>
@@ -211,6 +218,7 @@ aside .saved span.ptw { color: var(--muted); }
     <footer class="composer">
       <div class="row">
         <button class="call" id="call" aria-pressed="false" data-state="idle"><span class="dot"></span><span id="callLabel">Conversar por voz</span></button>
+        <button class="done" id="done" hidden title="Atalho: barra de espaço">✓ Terminei</button>
         <textarea id="input" rows="1" placeholder="Ou escreva em inglês (pode misturar português se travar)..." aria-label="Sua mensagem"></textarea>
         <button class="send" id="send">Enviar</button>
       </div>
@@ -270,7 +278,13 @@ aside .saved span.ptw { color: var(--muted); }
       ["interview", "Entrevista de emprego", "You are an interviewer for a developer / IT automation position. Ask me about my experience, one question at a time."],
       ["explain", "Explicar um sistema", "You are a non-technical manager. I need to explain how a system or automation I built works."],
       ["review", "Code review", "You are a senior developer reviewing my pull request. Discuss changes, naming, tests, and ask me to justify decisions."],
-      ["smalltalk", "Small talk no escritório", "You are a colleague from the US office. Make small talk before a meeting: weekend, weather, coffee, projects."]
+      ["smalltalk", "Small talk no escritório", "You are a colleague from the US office. Make small talk before a meeting: weekend, weather, coffee, projects."],
+      ["restaurant", "Pedir no restaurante", "You are a friendly waiter in a restaurant in the US. Greet me, take my order, answer questions about the menu, and bring the check."],
+      ["hotel", "Check-in no hotel", "You are a hotel receptionist. Check me in, ask for my reservation details, explain breakfast and Wi-Fi, and help with a small problem in the room."],
+      ["airport", "Aeroporto e imigração", "You are an immigration officer at a US airport, then an airline agent. Ask the usual questions: purpose of the trip, how long, where I will stay."],
+      ["shop", "Compras e devolução", "You are a store employee. Help me find a product, talk about sizes and prices, and handle a return of something that does not work."],
+      ["doctor", "Consulta médica", "You are a doctor. Ask how I feel, my symptoms and for how long, and give simple advice."],
+      ["neighbor", "Conversa com vizinho", "You are my new neighbor. Introduce yourself and chat: where we are from, work, family, the neighborhood, weekend plans."]
     ],
     gram: [
       ["present", "Presente simples", "Present simple for daily tasks (I deploy, she tests, the server runs)."],
@@ -281,6 +295,25 @@ aside .saved span.ptw { color: var(--muted); }
       ["pron", "Pronúncia", "Pronunciation of hard tech words for Brazilians: th, final -ed, schedule, variable, queue, cache, library, height, focus."]
     ]
   };
+  const TOPICS = [
+    ["it", "Trabalho em TI", "the student's work in IT: projects, bugs, deploys, meetings, tools"],
+    ["daily", "Dia a dia", "everyday life: routine, home, weekend, plans, the weather"],
+    ["travel", "Viagens", "travel: places they visited or want to visit, airports, hotels, tourism"],
+    ["food", "Comida", "food: favorite dishes, cooking, restaurants, Brazilian food"],
+    ["hobbies", "Hobbies e esportes", "hobbies and sports: football, music, games, exercise, free time"],
+    ["movies", "Filmes e séries", "movies, TV series and books they like"],
+    ["family", "Família e amigos", "family, friends and social life"],
+    ["money", "Compras e dinheiro", "shopping, prices, saving money, online orders"],
+    ["news", "Atualidades e opiniões", "current events and technology news, sharing and defending opinions"],
+    ["future", "Planos e sonhos", "plans for the future, career goals, dreams"]
+  ];
+  let customTopic = "";
+  try { customTopic = localStorage.getItem("tec_topic") || ""; } catch (e) {}
+  function chatTopic() {
+    if (scenario === "custom" && customTopic) return { it: false, text: `the topic the student chose: "${customTopic}". Explore it in depth like a good conversation partner: ask about their experience and opinions, react to what they say, bring in useful vocabulary for this topic, and go from easy questions to more detailed ones` };
+    const t = TOPICS.find(x => x[0] === scenario) || TOPICS[0];
+    return { it: t[0] === "it", text: t[2] };
+  }
   const VOCAB_TOPICS = [["deploy", "Deploy e infraestrutura"], ["bugs", "Bugs e debugging"], ["meetings", "Reuniões e prazos"], ["code", "Código e versionamento"], ["db", "Banco de dados e APIs"], ["auto", "Automação e integrações"], ["support", "Suporte e tickets"], ["career", "Carreira e entrevistas"]];
 
   const BASE_RULES = () => `You are "Tech English Coach", a patient English tutor for a Brazilian IT professional (software development, automation, systems). The student's level is ${$("#level").value} (CEFR). Their native language is Brazilian Portuguese. The student may be SPEAKING to you through speech recognition, so their text can contain transcription mistakes: interpret generously and do not correct obvious transcription errors.
@@ -303,7 +336,8 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
   function modeRules() {
     if (mode === "sim") { const s = SCENARIOS.sim.find(x => x[0] === scenario) || SCENARIOS.sim[0]; return BASE_RULES() + `\n\nMode: role-play simulation. Scenario: ${s[2]} Stay in character. Begin the scene with your first line.`; }
     if (mode === "gram") { const s = SCENARIOS.gram.find(x => x[0] === scenario) || SCENARIOS.gram[0]; return BASE_RULES() + `\n\nMode: grammar and pronunciation coaching. Topic: ${s[2]} Teach with tiny examples from IT work, then ask the student to try one sentence. In "tip_pt" give the rule in Portuguese. For pronunciation, describe mouth position in Portuguese and compare with Portuguese sounds.`; }
-    return BASE_RULES() + `\n\nMode: free conversation about the student's work in IT. Start by asking about their day or current project.`;
+    const t = chatTopic();
+    return BASE_RULES() + `\n\nMode: free conversation. Topic: ${t.text}.` + (t.it ? "" : " This is NOT an IT conversation: use everyday vocabulary for this topic and ignore the IT vocabulary rule above.");
   }
 
   // ---------- helpers ----------
@@ -485,6 +519,35 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     callLabel.textContent = !callActive ? "Conversar por voz" : ({ connecting: "Conectando...", listening: "Pode falar (clique para encerrar)", hearing: "Ouvindo você...", thinking: "Pensando...", speaking: "Coach falando" })[s] || "Em chamada";
   }
 
+  // ---------- turn-taking: how long the coach waits, or manual "I'm done" ----------
+  const turnSel = $("#turn"), doneBtn = $("#done");
+  try { const v = localStorage.getItem("tec_turn"); if (v && [...turnSel.options].some(o => o.value === v)) turnSel.value = v; } catch (e) {}
+  const manualTurn = () => turnSel.value === "manual";
+  function turnConfig() {
+    if (manualTurn()) return null; // no automatic end of turn: the student clicks "Terminei"
+    return { type: "server_vad", threshold: 0.55, prefix_padding_ms: 400, silence_duration_ms: Number(turnSel.value) || 2500, create_response: true, interrupt_response: true };
+  }
+  function applyTurn() {
+    if (rt) rtSend({ type: "session.update", session: { type: "realtime", audio: { input: { turn_detection: turnConfig() } } } });
+    doneBtn.hidden = !(callActive && manualTurn());
+  }
+  function finishTurn() {
+    if (!callActive || !manualTurn()) return;
+    if (rt) { rtSend({ type: "input_audio_buffer.commit" }); rtSend({ type: "response.create" }); setCallState("thinking"); }
+    else finishListening(); // classic call: stop recording now and send
+  }
+  turnSel.addEventListener("change", () => {
+    try { localStorage.setItem("tec_turn", turnSel.value); } catch (e) {}
+    applyTurn();
+    if (callActive) setStatus(manualTurn() ? "Fale com calma e clique em Terminei (ou barra de espaço) quando acabar." : "O coach agora espera " + (Number(turnSel.value) / 1000).toString().replace(".", ",") + " s de silêncio antes de responder.");
+  });
+  doneBtn.addEventListener("click", finishTurn);
+  document.addEventListener("keydown", (e) => {
+    if (e.code !== "Space" || !callActive || !manualTurn()) return;
+    const t = e.target; if (t && (t.tagName === "TEXTAREA" || t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "BUTTON")) return;
+    e.preventDefault(); finishTurn();
+  });
+
   // ---------- realtime voice call (OpenAI Realtime over WebRTC: speech in, speech out, ~1 s latency) ----------
   let rt = null; // { pc, dc, audio }
   const rtMe = {}, rtCoach = {}; // bubbles by item / response id
@@ -496,7 +559,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     let task;
     if (mode === "sim") { const s = SCENARIOS.sim.find(x => x[0] === scenario) || SCENARIOS.sim[0]; task = `This is a role-play. ${s[2]} Stay in character the whole time. Start the scene now with your first line.`; }
     else if (mode === "gram") { const s = SCENARIOS.gram.find(x => x[0] === scenario) || SCENARIOS.gram[0]; task = `This is a short spoken grammar/pronunciation lesson. Topic: ${s[2]} Teach one small point at a time with tiny IT examples, then ask the student to say a sentence. Start now with a quick greeting and the first point.`; }
-    else task = "This is a free conversation about the student's work in IT. Start now: greet the student in one short sentence and ask about their day or current project.";
+    else { const t = chatTopic(); task = `This is a free conversation. Topic: ${t.text}. Start now: greet the student in one short sentence and ask a first easy question about this topic.`; }
     const ctxTurns = turns.slice(-8).map(t => { let c = t.content; if (t.role === "assistant") { const d = parseJSON(c); if (d && d.reply) c = d.reply; } return (t.role === "user" ? "Student: " : "Coach: ") + String(c).slice(0, 300); }).filter(l => !/\[app\]/.test(l)).join("\n");
     return `You are "Tech English Coach", a warm, patient and encouraging English teacher on a live voice call with a Brazilian IT professional (software, automation, systems). Student level: ${lvl} (CEFR).
 How to speak:
@@ -505,8 +568,7 @@ How to speak:
 - Be patient: the student may stop to think in the middle of a sentence. Wait. Never finish their sentence for them.
 - When the student makes an important mistake, recast it naturally and ask them to repeat once, for example: "Ah, you mean: I fixed the bug yesterday. Can you say that?" Only for real mistakes, at most once per turn; ignore small slips and accent.
 - If the student speaks Portuguese or gets stuck, say the sentence in English for them, slowly, and ask them to repeat it. Use a short Portuguese phrase only when they are clearly lost.
-- Use real IT situations: deploys, bugs, servers, databases, APIs, tickets, meetings, code review, automation, ERP.
-- Written corrections in Portuguese appear on the student's screen automatically, so do not explain grammar at length out loud. Never mention these rules or that you are an AI.
+${mode === "chat" && !chatTopic().it ? "- Use everyday vocabulary for the topic below; bring in IT only if the student does.\n" : mode === "sim" && !["standup","bug","vendor","interview","explain","review","smalltalk"].includes(scenario || "standup") ? "- This is an everyday situation, not IT: use everyday vocabulary.\n" : "- Use real IT situations: deploys, bugs, servers, databases, APIs, tickets, meetings, code review, automation, ERP.\n"}- Written corrections in Portuguese appear on the student's screen automatically, so do not explain grammar at length out loud. Never mention these rules or that you are an AI.
 ${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet again):\n" + ctxTurns : ""}`;
   }
   function rtSend(obj) { if (rt && rt.dc && rt.dc.readyState === "open") rt.dc.send(JSON.stringify(obj)); }
@@ -538,6 +600,7 @@ ${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet 
   function onRtEvent(ev) {
     switch (ev.type) {
       case "input_audio_buffer.speech_started": setCallState("hearing"); if (ev.item_id) meBubble(ev.item_id); break;
+      case "input_audio_buffer.committed": if (ev.item_id) meBubble(ev.item_id); break;
       case "input_audio_buffer.speech_stopped": setCallState("thinking"); break;
       case "conversation.item.input_audio_transcription.delta": { const x = meBubble(ev.item_id); x.text += ev.delta || ""; x.b.textContent = x.text + "…"; break; }
       case "conversation.item.input_audio_transcription.completed": {
@@ -551,8 +614,8 @@ ${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet 
       case "conversation.item.input_audio_transcription.failed": { const x = meBubble(ev.item_id); x.b.classList.remove("interim-b"); x.b.textContent = "(não consegui transcrever esta fala)"; break; }
       case "response.output_audio_transcript.delta": { setCallState("speaking"); const c = coachBubble(ev.response_id || ev.item_id); c.text += ev.delta || ""; c.b.textContent = c.text; scrollDown(); break; }
       case "response.output_audio_transcript.done": { const c = coachBubble(ev.response_id || ev.item_id); const t = String(ev.transcript || c.text).trim(); finishCoachBubble(c, t); turns.push({ role: "assistant", content: JSON.stringify({ reply: t }) }); break; }
-      case "response.done": { setCallState("listening"); const st = ev.response && ev.response.status; if (st === "failed") { const d = ev.response.status_details; setStatus("O coach não conseguiu responder: " + ((d && d.error && d.error.message) || "erro"), true); } break; }
-      case "error": { const m = ev.error && ev.error.message; if (m && !/no active response|cancel/i.test(m)) setStatus("Voz: " + m, true); break; }
+      case "response.done": { setCallState("listening"); if (manualTurn()) rtSend({ type: "input_audio_buffer.clear" }); const st = ev.response && ev.response.status; if (st === "failed") { const d = ev.response.status_details; setStatus("O coach não conseguiu responder: " + ((d && d.error && d.error.message) || "erro"), true); } break; }
+      case "error": { const m = ev.error && ev.error.message; if (m && /buffer too small|empty|no audio/i.test(m)) { setStatus("Ainda não ouvi você. Fale e depois clique em Terminei.", true); setCallState("listening"); break; } if (m && !/no active response|cancel/i.test(m)) setStatus("Voz: " + m, true); break; }
     }
   }
   function teardownRealtime() {
@@ -586,6 +649,7 @@ ${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet 
     if (!sdp.ok) { let m = ""; try { m = (await sdp.json()).error.message; } catch (e) {} throw new Error("a OpenAI recusou a conexão" + (m ? ": " + m : " (" + sdp.status + ")")); }
     await pc.setRemoteDescription({ type: "answer", sdp: await sdp.text() });
     await opened;
+    applyTurn();
     setCallState("thinking");
     rtSend({ type: "response.create" }); // the coach opens the conversation
   }
@@ -611,7 +675,7 @@ Rules: "correction" only for a REAL grammar or vocabulary mistake, the single mo
     if (!callActive || rt || busy || speaking || listening) return;
     setCallState("listening");
     let blob;
-    try { blob = await recordUtterance({ silenceMs: 1800, onSpeech: () => setCallState("hearing") }); }
+    try { blob = await recordUtterance(manualTurn() ? { silenceMs: 600000, maxMs: 120000, onSpeech: () => setCallState("hearing") } : { silenceMs: Number(turnSel.value) || 2500, onSpeech: () => setCallState("hearing") }); }
     catch (e) { micError(e); endCall(); return; }
     if (!callActive || rt) return;
     if (!blob) { setTimeout(classicListen, 100); return; } // nothing said: keep listening
@@ -624,7 +688,7 @@ Rules: "correction" only for a REAL grammar or vocabulary mistake, the single mo
   function endCall() {
     callActive = false; callBtn.setAttribute("aria-pressed", "false");
     teardownRealtime(); stopListening(); stopMeter(); releaseMic();
-    speaking = false; stopAudio(); setCallState("idle");
+    speaking = false; stopAudio(); setCallState("idle"); doneBtn.hidden = true;
   }
   if (!canRecord) { callBtn.disabled = true; callBtn.title = "Este navegador não dá acesso ao microfone. Use Chrome ou Edge atualizados."; }
   callBtn.addEventListener("click", async () => {
@@ -635,13 +699,13 @@ Rules: "correction" only for a REAL grammar or vocabulary mistake, the single mo
     callActive = true; callBtn.setAttribute("aria-pressed", "true"); setCallState("connecting"); setStatus("");
     try { await getMic(); } catch (e) { micError(e); endCall(); return; }
     if (!callActive) return;
-    startMeter(micStream);
+    startMeter(micStream); applyTurn();
     if (!turns.length) { const empty = log.querySelector(".empty"); if (empty) log.textContent = ""; }
     if ($("#engine").value !== "classic" && window.RTCPeerConnection) {
       try {
         await withTimeout(startRealtime(), 15000, "a conexão demorou demais");
         if (!callActive) { teardownRealtime(); return; }
-        setStatus("Conectado. Fale normalmente; pode pensar com calma e até interromper o coach.");
+        setStatus(manualTurn() ? "Conectado. Fale com calma e clique em Terminei (ou barra de espaço) quando acabar." : "Conectado. O coach espera " + (Number(turnSel.value) / 1000).toString().replace(".", ",") + " s de silêncio antes de responder; se ainda cortar você, aumente em Tempo para pensar.");
         return;
       } catch (e) {
         teardownRealtime();
@@ -945,10 +1009,27 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
   // ---------- modes ----------
   function renderScenarioBar() {
     scenariosBar.textContent = "";
-    const list = mode === "sim" ? SCENARIOS.sim : mode === "gram" ? SCENARIOS.gram : mode === "vocab" ? VOCAB_TOPICS : mode === "tasks" ? ACT_TYPES : null;
+    const list = mode === "chat" ? TOPICS : mode === "sim" ? SCENARIOS.sim : mode === "gram" ? SCENARIOS.gram : mode === "vocab" ? VOCAB_TOPICS : mode === "tasks" ? ACT_TYPES : null;
     scenariosBar.hidden = !list; if (!list) return;
-    scenariosBar.append(el("span", "eyebrow", mode === "vocab" ? "tema" : mode === "sim" ? "cenário" : mode === "tasks" ? "atividade" : "tópico"));
-    list.forEach(s => { const b = el("button", "chip", s[1]); b.setAttribute("aria-pressed", String(scenario === s[0])); b.addEventListener("click", () => { scenario = s[0]; renderScenarioBar(); startScene(); }); scenariosBar.append(b); });
+    scenariosBar.append(el("span", "eyebrow", mode === "vocab" ? "tema" : mode === "sim" ? "cenário" : mode === "tasks" ? "atividade" : mode === "chat" ? "assunto" : "tópico"));
+    list.forEach(s => { const b = el("button", "chip", s[1]); b.setAttribute("aria-pressed", String(scenario === s[0])); b.addEventListener("click", () => chooseScene(s[0])); scenariosBar.append(b); });
+    if (mode === "chat") {
+      if (customTopic) { const b = el("button", "chip", "✎ " + customTopic); b.setAttribute("aria-pressed", String(scenario === "custom")); b.addEventListener("click", () => chooseScene("custom")); scenariosBar.append(b); }
+      const f = el("form", "topicform");
+      const inp = el("input"); inp.id = "topicInput"; inp.type = "text"; inp.maxLength = 120; inp.placeholder = "ou digite qualquer tema: carros elétricos, Copa, churrasco, IA...";
+      const go = el("button", "chip", "Conversar sobre isso"); go.type = "submit";
+      f.append(inp, go);
+      f.addEventListener("submit", (e) => { e.preventDefault(); const v = inp.value.trim(); if (!v) { inp.focus(); return; } customTopic = v; try { localStorage.setItem("tec_topic", v); } catch (x) {} chooseScene("custom"); });
+      scenariosBar.append(f);
+    }
+  }
+  function chooseScene(id) {
+    scenario = id; renderScenarioBar();
+    if (callActive && (mode === "chat" || mode === "sim" || mode === "gram")) {
+      // already on a call: restart it on the new subject, keeping you on voice
+      endCall(); turns = []; log.textContent = ""; callBtn.click(); return;
+    }
+    startScene();
   }
   function startScene() {
     if (rt) endCall();
@@ -957,13 +1038,13 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
     if (mode === "vocab") { loadVocab(scenario || VOCAB_TOPICS[0][0]); return; }
     if (mode === "tasks") { loadActivities(scenario || "mission"); return; }
     if ((mode === "sim" || mode === "gram") && !scenario) scenario = SCENARIOS[mode][0][0], renderScenarioBar();
-    askCoach(mode === "sim" ? "[app] Start the role-play now. You speak first, in character." : mode === "gram" ? "[app] Start this topic: teach the first point with two tiny examples, then ask the student to try one sentence." : "[app] Start the conversation: greet the student briefly and ask about their day or current project.");
+    askCoach(mode === "sim" ? "[app] Start the role-play now. You speak first, in character." : mode === "gram" ? "[app] Start this topic: teach the first point with two tiny examples, then ask the student to try one sentence." : "[app] Start the conversation about the chosen topic: greet the student briefly and ask a first easy question about it.");
   }
   function showEmpty() {
     log.textContent = "";
     const e = el("div", "empty");
-    e.append(el("h2", null, { chat: "Conversa livre sobre o seu trabalho", sim: "Escolha um cenário acima", vocab: "Escolha um tema acima", gram: "Escolha um tópico acima", tasks: "Escolha uma atividade acima" }[mode]));
-    e.append(el("div", null, { chat: "Clique em \"Conversar por voz\" e fale, ou escreva abaixo. O coach responde em inglês simples, corrige o que precisa e explica em português.", sim: "Você entra numa cena real de trabalho (standup, bug, call, entrevista) e o coach faz o outro papel, por voz ou texto.", vocab: "Oito termos do dia a dia de TI com pronúncia, tradução, exemplo e um quiz rápido.", gram: "Mini-aulas de gramática e pronúncia com exemplos de TI e exercícios curtos.", tasks: "Exercícios novos a cada rodada, gerados para o seu nível: completar frases, ditado, repetir em voz alta, traduzir, ordenar palavras e múltipla escolha. Cada acerto vale XP, e a sequência de dias conta no painel." }[mode]));
+    e.append(el("h2", null, { chat: "Converse sobre o que quiser", sim: "Escolha um cenário acima", vocab: "Escolha um tema acima", gram: "Escolha um tópico acima", tasks: "Escolha uma atividade acima" }[mode]));
+    e.append(el("div", null, { chat: "Escolha um assunto acima (trabalho, dia a dia, viagens, filmes...) ou digite qualquer tema, e clique em \"Conversar por voz\" ou escreva abaixo. O coach puxa a conversa, aprofunda o tema, corrige o que precisa e explica em português.", sim: "Você entra numa cena real, do trabalho (standup, bug, entrevista) ou do dia a dia (restaurante, hotel, aeroporto, médico), e o coach faz o outro papel, por voz ou texto.", vocab: "Oito termos do dia a dia de TI com pronúncia, tradução, exemplo e um quiz rápido.", gram: "Mini-aulas de gramática e pronúncia com exemplos de TI e exercícios curtos.", tasks: "Exercícios novos a cada rodada, gerados para o seu nível: completar frases, ditado, repetir em voz alta, traduzir, ordenar palavras e múltipla escolha. Cada acerto vale XP, e a sequência de dias conta no painel." }[mode]));
     if (mode === "tasks") { const b = el("button", "send", "Começar missão do dia"); b.style.alignSelf = "flex-start"; b.addEventListener("click", () => { scenario = "mission"; renderScenarioBar(); loadActivities("mission"); }); e.append(b); }
     if (mode === "chat") {
       const st = el("div", "starters");
