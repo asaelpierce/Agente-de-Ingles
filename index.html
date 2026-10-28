@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tech English Coach</title>
+<meta name="theme-color" content="#1259c3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="English Coach">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 :root {
@@ -25,6 +33,8 @@
 }
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
+body { height: var(--app-h, 100dvh); overflow: hidden; -webkit-tap-highlight-color: transparent; }
+button, .chip, .mode { touch-action: manipulation; }
 body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5; display: flex; flex-direction: column; }
 button { font: inherit; cursor: pointer; }
 button:focus-visible, textarea:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -34,10 +44,17 @@ h1, h2, h3 { margin: 0; text-wrap: balance; }
 
 header.top { background: var(--surface); border-bottom: 1px solid var(--line); padding-block: 10px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
 header.top h1 { font-size: 17px; font-weight: 600; }
-header.top h1 span { font-family: var(--font-mono); color: var(--accent); font-weight: 500; }
+header.top h1 span:first-child { font-family: var(--font-mono); color: var(--accent); font-weight: 500; }
 .modes { display: flex; flex-wrap: wrap; gap: 6px; margin-left: auto; }
 .mode { border: 1px solid var(--line); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 5px 12px; font-size: 13px; }
 .mode[aria-pressed="true"] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.titlerow { display: contents; }
+.hbtns { display: none; align-items: center; gap: 6px; margin-left: auto; }
+.iconbtn { width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 18px; line-height: 1; display: grid; place-items: center; padding: 0; }
+.install { display: flex; align-items: center; gap: 8px; padding: 8px max(16px, env(safe-area-inset-right, 0px)) 8px max(16px, env(safe-area-inset-left, 0px)); background: var(--accent-soft); font-size: 14px; }
+.install span { flex: 1; min-width: 0; }
+.install .iconbtn { width: 32px; height: 32px; font-size: 14px; }
+.notes-head { display: none; }
 .settings { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
 .settings select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
 
@@ -47,6 +64,7 @@ section.chat { display: flex; flex-direction: column; min-width: 0; min-height: 
 .scenario-bar { padding-block: 8px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: 16px; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; border-bottom: 1px solid var(--line); background: var(--surface); }
 .chip { border: 1px solid var(--line); background: var(--surface-2); color: var(--fg); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
 .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.chips-row { display: contents; }
 .topicform { display: flex; gap: 6px; flex: 1 1 320px; min-width: 0; }
 .topicform input { flex: 1; min-width: 0; font: inherit; font-size: 14px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
 @media (max-width: 600px) { .topicform input { font-size: 16px; } }
@@ -136,6 +154,55 @@ aside .saved span.en { font-weight: 500; }
 aside .saved span.ptw { color: var(--muted); }
 .ghost { border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 6px; padding: 5px 10px; font-size: 13px; }
 
+/* ---------- phone ---------- */
+@media (max-width: 700px) {
+  body { font-size: 16px; }
+  header.top { flex-wrap: nowrap; flex-direction: column; align-items: stretch; gap: 8px; padding-block: 8px; }
+  .titlerow { display: flex; align-items: center; gap: 8px; }
+  header.top h1 { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .hbtns { display: flex; }
+  .xpchip { display: inline-block; white-space: nowrap; }
+  .tfull { display: none; }
+  .modes { flex-wrap: nowrap; overflow-x: auto; margin: 0 calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding: 0 max(16px, env(safe-area-inset-left, 0px)); scrollbar-width: none; gap: 6px; }
+  .modes::-webkit-scrollbar, .scenario-bar::-webkit-scrollbar { display: none; }
+  .mode { flex: none; padding: 8px 14px; font-size: 14px; }
+  .settings { display: none; }
+  body.settings-open .settings { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; font-size: 14px; padding-top: 4px; border-top: 1px solid var(--line); }
+  body.settings-open .settings select { width: 100%; padding: 8px; font-size: 16px; }
+  .scenario-bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-block: 8px; }
+  .scenario-bar .eyebrow { flex: none; }
+  .scenario-bar .chip { flex: none; padding: 8px 12px; font-size: 14px; }
+  .scenario-bar:has(.topicform) { flex-wrap: wrap; overflow-x: visible; }
+  .scenario-bar:has(.topicform) .chips-row { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; flex: 1 1 100%; min-width: 0; margin-right: -16px; padding-right: 16px; }
+  .scenario-bar:has(.topicform) .chips-row::-webkit-scrollbar { display: none; }
+  .topicform { flex: 1 1 100%; }
+  .topicform input { padding: 8px 10px; }
+  .log { padding-block: 12px; gap: 12px; }
+  .msg { max-width: 88%; }
+  .tools button { padding: 6px 12px; font-size: 13px; }
+  .card { font-size: 14.5px; }
+  .call { height: 52px; font-size: 16px; }
+  .done { height: 52px; font-size: 16px; }
+  .send { height: 48px; }
+  textarea { min-height: 48px; }
+  body.in-call .row textarea, body.in-call #send { display: none; }
+  body[data-mode="vocab"] #call, body[data-mode="tasks"] #call { display: none; }
+  body.in-call .call { height: 60px; }
+  body.in-call .done { height: 60px; font-size: 18px; }
+  body.in-call .row { gap: 10px; }
+  aside.notes { display: none; }
+  body.notes-open aside.notes { display: flex; position: fixed; inset: 0; z-index: 15; border: 0; padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); font-size: 15px; }
+  body.notes-open .notes-head { display: flex; align-items: center; justify-content: space-between; }
+  body.notes-open .notes-head h2 { font-size: 18px; }
+  .ex .btn, .summary .btn { padding: 11px 16px; font-size: 15px; }
+  .ex .opts .btn { padding: 12px 14px; }
+  .ex .chip { padding: 8px 12px; font-size: 16px; }
+  .ex .text { font-size: 19px; }
+  .quiz .opts button { padding: 12px; }
+  .starters button { padding: 9px 12px; font-size: 14px; }
+}
+@media (min-width: 701px) { .install { display: none !important; } }
+
 /* activities */
 .ex { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; max-width: 72ch; }
 .ex .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -173,7 +240,7 @@ aside .saved span.ptw { color: var(--muted); }
 .gate p { margin: 0; color: var(--muted); font-size: 13.5px; }
 </style>
 </head>
-<body>
+<body data-mode="chat">
 
 <div class="gate" id="gate" hidden>
   <form id="gateForm">
@@ -186,7 +253,14 @@ aside .saved span.ptw { color: var(--muted); }
 </div>
 
 <header class="top">
-  <h1><span>&gt;_</span> Tech English Coach</h1>
+  <div class="titlerow">
+    <h1><span>&gt;_</span> <span class="tfull">Tech </span>English Coach</h1>
+    <div class="hbtns">
+      <span class="xpchip" id="xpChip"></span>
+      <button class="iconbtn" id="notesBtn" aria-label="Progresso e palavras salvas" aria-expanded="false">📊</button>
+      <button class="iconbtn" id="gearBtn" aria-label="Ajustes" aria-expanded="false">⚙</button>
+    </div>
+  </div>
   <div class="modes" aria-label="Modo de prática">
     <button class="mode" data-mode="chat" aria-pressed="true">Conversa</button>
     <button class="mode" data-mode="sim" aria-pressed="false">Simulação</button>
@@ -207,9 +281,9 @@ aside .saved span.ptw { color: var(--muted); }
     <select id="engine"><option value="realtime" selected>tempo real</option><option value="classic">clássica</option></select>
     <label for="auto">Ler respostas</label>
     <select id="auto"><option value="1" selected>sim</option><option value="0">não</option></select>
-    <span class="xpchip" id="xpChip"></span>
   </div>
 </header>
+<div class="install" id="install" hidden><span id="installText">Instale o coach como app no celular.</span><button class="chip" id="installBtn">Instalar</button><button class="iconbtn" id="installClose" aria-label="Fechar">✕</button></div>
 
 <main>
   <section class="chat">
@@ -219,14 +293,15 @@ aside .saved span.ptw { color: var(--muted); }
       <div class="row">
         <button class="call" id="call" aria-pressed="false" data-state="idle"><span class="dot"></span><span id="callLabel">Conversar por voz</span></button>
         <button class="done" id="done" hidden title="Atalho: barra de espaço">✓ Terminei</button>
-        <textarea id="input" rows="1" placeholder="Ou escreva em inglês (pode misturar português se travar)..." aria-label="Sua mensagem"></textarea>
+        <textarea id="input" rows="1" placeholder="Ou escreva em inglês..." aria-label="Sua mensagem"></textarea>
         <button class="send" id="send">Enviar</button>
       </div>
       <div class="statusrow"><div class="status" id="status"></div><button class="ghost small" id="reset2">Nova conversa</button></div>
     </footer>
   </section>
 
-  <aside class="notes">
+  <aside class="notes" id="notes">
+    <div class="notes-head"><h2>Progresso e palavras</h2><button class="iconbtn" id="closeNotes" aria-label="Fechar">✕</button></div>
     <div>
       <h2>Sessão de hoje</h2>
       <div class="stat"><span>Mensagens</span><span id="stMsgs">0</span></div>
@@ -500,6 +575,17 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     return true;
   }
 
+  // ---------- keep the phone screen on during a call ----------
+  let wakeLock = null, wantAwake = false;
+  async function keepAwake(on) {
+    wantAwake = on;
+    try {
+      if (on && !wakeLock && navigator.wakeLock && document.visibilityState === "visible") { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); }
+      else if (!on && wakeLock) { const w = wakeLock; wakeLock = null; await w.release(); }
+    } catch (e) { wakeLock = null; }
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && wantAwake) keepAwake(true); });
+
   // ---------- microphone level meter on the call button (so you can see the mic is picking you up) ----------
   let meter = null;
   function startMeter(stream) {
@@ -515,6 +601,8 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
   function stopMeter() { if (meter) { clearInterval(meter.t); try { meter.ctx.close(); } catch (e) {} meter = null; } callBtn.style.setProperty("--lvl", "0"); }
 
   function setCallState(s) {
+    document.body.classList.toggle("in-call", callActive);
+    keepAwake(callActive);
     callBtn.dataset.state = callActive ? s : "idle";
     callLabel.textContent = !callActive ? "Conversar por voz" : ({ connecting: "Conectando...", listening: "Pode falar (clique para encerrar)", hearing: "Ouvindo você...", thinking: "Pensando...", speaking: "Coach falando" })[s] || "Em chamada";
   }
@@ -533,6 +621,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
   }
   function finishTurn() {
     if (!callActive || !manualTurn()) return;
+    try { navigator.vibrate && navigator.vibrate(15); } catch (e) {}
     if (rt) { rtSend({ type: "input_audio_buffer.commit" }); rtSend({ type: "response.create" }); setCallState("thinking"); }
     else finishListening(); // classic call: stop recording now and send
   }
@@ -1012,11 +1101,12 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
     const list = mode === "chat" ? TOPICS : mode === "sim" ? SCENARIOS.sim : mode === "gram" ? SCENARIOS.gram : mode === "vocab" ? VOCAB_TOPICS : mode === "tasks" ? ACT_TYPES : null;
     scenariosBar.hidden = !list; if (!list) return;
     scenariosBar.append(el("span", "eyebrow", mode === "vocab" ? "tema" : mode === "sim" ? "cenário" : mode === "tasks" ? "atividade" : mode === "chat" ? "assunto" : "tópico"));
-    list.forEach(s => { const b = el("button", "chip", s[1]); b.setAttribute("aria-pressed", String(scenario === s[0])); b.addEventListener("click", () => chooseScene(s[0])); scenariosBar.append(b); });
+    const row = mode === "chat" ? el("div", "chips-row") : scenariosBar; if (row !== scenariosBar) scenariosBar.append(row);
+    list.forEach(s => { const b = el("button", "chip", s[1]); b.setAttribute("aria-pressed", String(scenario === s[0])); b.addEventListener("click", () => chooseScene(s[0])); row.append(b); });
     if (mode === "chat") {
-      if (customTopic) { const b = el("button", "chip", "✎ " + customTopic); b.setAttribute("aria-pressed", String(scenario === "custom")); b.addEventListener("click", () => chooseScene("custom")); scenariosBar.append(b); }
+      if (customTopic) { const b = el("button", "chip", "✎ " + customTopic); b.setAttribute("aria-pressed", String(scenario === "custom")); b.addEventListener("click", () => chooseScene("custom")); row.prepend(b); }
       const f = el("form", "topicform");
-      const inp = el("input"); inp.id = "topicInput"; inp.type = "text"; inp.maxLength = 120; inp.placeholder = "ou digite qualquer tema: carros elétricos, Copa, churrasco, IA...";
+      const inp = el("input"); inp.id = "topicInput"; inp.type = "text"; inp.maxLength = 120; inp.placeholder = "ou digite um tema: Copa, churrasco, IA...";
       const go = el("button", "chip", "Conversar sobre isso"); go.type = "submit";
       f.append(inp, go);
       f.addEventListener("submit", (e) => { e.preventDefault(); const v = inp.value.trim(); if (!v) { inp.focus(); return; } customTopic = v; try { localStorage.setItem("tec_topic", v); } catch (x) {} chooseScene("custom"); });
@@ -1025,6 +1115,7 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
   }
   function chooseScene(id) {
     scenario = id; renderScenarioBar();
+    const pressed = scenariosBar.querySelector('.chip[aria-pressed="true"]'); if (pressed && pressed.scrollIntoView) pressed.scrollIntoView({ block: "nearest", inline: "center" });
     if (callActive && (mode === "chat" || mode === "sim" || mode === "gram")) {
       // already on a call: restart it on the new subject, keeping you on voice
       endCall(); turns = []; log.textContent = ""; callBtn.click(); return;
@@ -1055,7 +1146,7 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
   }
   document.querySelectorAll(".mode").forEach(b => b.addEventListener("click", () => {
     cancelPending(); endCall();
-    mode = b.dataset.mode; scenario = null; turns = [];
+    mode = b.dataset.mode; document.body.dataset.mode = mode; scenario = null; turns = [];
     document.querySelectorAll(".mode").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
     renderScenarioBar(); showEmpty();
   }));
@@ -1071,6 +1162,37 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
     try { localStorage.setItem("tec_code", code); } catch (x) {}
     $("#gate").hidden = true; $("#gateErr").textContent = ""; setStatus("");
   });
+
+  // ---------- phone shell ----------
+  const gearBtn = $("#gearBtn"), notesBtn = $("#notesBtn");
+  gearBtn.addEventListener("click", () => { const on = document.body.classList.toggle("settings-open"); gearBtn.setAttribute("aria-expanded", String(on)); });
+  notesBtn.addEventListener("click", () => { document.body.classList.add("notes-open"); notesBtn.setAttribute("aria-expanded", "true"); });
+  $("#closeNotes").addEventListener("click", () => { document.body.classList.remove("notes-open"); notesBtn.setAttribute("aria-expanded", "false"); });
+  document.querySelectorAll(".mode").forEach(b => b.addEventListener("click", () => { document.body.classList.remove("settings-open"); gearBtn.setAttribute("aria-expanded", "false"); }));
+  // size the app to the part of the screen that is really visible (mobile browser bars, on-screen keyboard)
+  if (window.visualViewport) {
+    const fit = () => { document.documentElement.style.setProperty("--app-h", Math.round(window.visualViewport.height) + "px"); window.scrollTo(0, 0); scrollDown(); };
+    window.visualViewport.addEventListener("resize", fit); fit();
+  }
+  input.addEventListener("focus", () => setTimeout(scrollDown, 300));
+  // install as an app (Android shows a prompt; iPhone needs Share > Add to Home Screen)
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone;
+  let installEvt = null, installDismissed = false;
+  try { installDismissed = localStorage.getItem("tec_install_x") === "1"; } catch (e) {}
+  const installBar = $("#install");
+  function hideInstall() { installBar.hidden = true; try { localStorage.setItem("tec_install_x", "1"); } catch (e) {} }
+  $("#installClose").addEventListener("click", hideInstall);
+  window.addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; if (!isStandalone && !installDismissed) installBar.hidden = false; });
+  $("#installBtn").addEventListener("click", async () => {
+    if (installEvt) { installEvt.prompt(); try { await installEvt.userChoice; } catch (e) {} installEvt = null; installBar.hidden = true; }
+    else hideInstall();
+  });
+  if (!isStandalone && !installDismissed && /iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+    $("#installText").textContent = "Para usar como app: toque em Compartilhar e depois em \"Adicionar à Tela de Início\".";
+    $("#installBtn").textContent = "Entendi";
+    installBar.hidden = false;
+  }
+  window.addEventListener("appinstalled", () => { installBar.hidden = true; });
 
   // ---------- boot ----------
   renderSaved(); renderScenarioBar(); showEmpty(); bump(); renderProgress();
