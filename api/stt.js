@@ -2,6 +2,7 @@
 // Body (JSON): { audio: base64 string, mime: "audio/webm" | "audio/mp4" | ..., language?: "en", prompt?: string }
 // Env vars: OPENAI_API_KEY, APP_PASSWORD, OPENAI_TRANSCRIBE_MODEL (default gpt-transcribe).
 
+const { guard } = require("./_auth");
 const PREFERRED = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-transcribe";
 const MODELS = [PREFERRED, "gpt-transcribe", "gpt-4o-transcribe", "gpt-4o-mini-transcribe", "whisper-1"].filter((m, i, a) => a.indexOf(m) === i);
 const BASE_PROMPT = "A Brazilian IT professional practicing English. Tech terms: deploy, bug, API, server, database, pull request, merge, commit, ticket, sprint, standup, backend, frontend, cloud, pipeline, automation.";
@@ -17,9 +18,7 @@ module.exports = async (req, res) => {
   if (req.method !== "POST") { res.status(405).json({ error: "method_not_allowed" }); return; }
   const key = process.env.OPENAI_API_KEY;
   if (!key) { res.status(500).json({ error: "no_api_key", message: "OPENAI_API_KEY não está configurada na Vercel." }); return; }
-  const expected = process.env.APP_PASSWORD;
-  if (!expected) { res.status(500).json({ error: "no_password" }); return; }
-  if ((req.headers["x-app-code"] || "") !== expected) { res.status(401).json({ error: "bad_code", message: "Código de acesso inválido." }); return; }
+  if (!guard(req, res)) return;
 
   const body = readBody(req);
   if (typeof body.audio !== "string" || !body.audio) { res.status(400).json({ error: "bad_request", message: "Áudio ausente." }); return; }

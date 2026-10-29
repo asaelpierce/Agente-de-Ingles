@@ -6,6 +6,7 @@
 
 // "smart" tier (activity generation): the most capable model. "fast" tier (chat replies, feedback cards,
 // translations, grading): a quick model with no reasoning, so the student is not kept waiting.
+const { guard } = require("./_auth");
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-6-astra";
 const OPENAI_REASONING = process.env.OPENAI_REASONING || "low";
 const OPENAI_FAST_MODEL = process.env.OPENAI_FAST_MODEL || "gpt-6-luna";
@@ -56,15 +57,7 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: "no_api_key", message: "Nenhuma chave configurada na Vercel (OPENAI_API_KEY ou ANTHROPIC_API_KEY)." });
     return;
   }
-  const expected = process.env.APP_PASSWORD;
-  if (!expected) {
-    res.status(500).json({ error: "no_password", message: "APP_PASSWORD não está configurada na Vercel. Defina um código de acesso antes de usar." });
-    return;
-  }
-  if ((req.headers["x-app-code"] || "") !== expected) {
-    res.status(401).json({ error: "bad_code", message: "Código de acesso inválido." });
-    return;
-  }
+  if (!guard(req, res)) return;
 
   const body = readBody(req);
   if (!body || typeof body.system !== "string" || !Array.isArray(body.messages) || !body.messages.length) {

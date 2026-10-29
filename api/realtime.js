@@ -3,6 +3,7 @@
 // Env vars: OPENAI_API_KEY, APP_PASSWORD, OPENAI_REALTIME_MODEL (default gpt-realtime-2.1),
 //           OPENAI_REALTIME_VOICE (default marin), OPENAI_TRANSCRIBE_MODEL (default gpt-transcribe).
 
+const { guard } = require("./_auth");
 const MODEL = process.env.OPENAI_REALTIME_MODEL || "gpt-realtime-2.1";
 const VOICE = process.env.OPENAI_REALTIME_VOICE || "marin";
 const TRANSCRIBE = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-transcribe";
@@ -27,9 +28,7 @@ module.exports = async (req, res) => {
   if (req.method !== "POST") { res.status(405).json({ error: "method_not_allowed" }); return; }
   const key = process.env.OPENAI_API_KEY;
   if (!key) { res.status(500).json({ error: "no_api_key", message: "OPENAI_API_KEY não está configurada na Vercel." }); return; }
-  const expected = process.env.APP_PASSWORD;
-  if (!expected) { res.status(500).json({ error: "no_password", message: "APP_PASSWORD não está configurada na Vercel." }); return; }
-  if ((req.headers["x-app-code"] || "") !== expected) { res.status(401).json({ error: "bad_code", message: "Código de acesso inválido." }); return; }
+  if (!guard(req, res)) return;
 
   const body = readBody(req);
   const instructions = String(body.instructions || "").slice(0, 10000);

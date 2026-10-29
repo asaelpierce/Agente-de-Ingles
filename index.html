@@ -56,6 +56,7 @@ header.top h1 span:first-child { font-family: var(--font-mono); color: var(--acc
 .install .iconbtn { width: 32px; height: 32px; font-size: 14px; }
 .notes-head { display: none; }
 .settings { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.settings-ok { display: none; }
 .settings select { font: inherit; font-size: 13px; padding: 4px 6px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); }
 
 main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 320px; }
@@ -154,8 +155,8 @@ aside .saved span.en { font-weight: 500; }
 aside .saved span.ptw { color: var(--muted); }
 .ghost { border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 6px; padding: 5px 10px; font-size: 13px; }
 
-/* ---------- phone ---------- */
-@media (max-width: 700px) {
+/* ---------- phone (narrow, or a phone held sideways) ---------- */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   body { font-size: 16px; }
   header.top { flex-wrap: nowrap; flex-direction: column; align-items: stretch; gap: 8px; padding-block: 8px; }
   .titlerow { display: flex; align-items: center; gap: 8px; }
@@ -167,7 +168,9 @@ aside .saved span.ptw { color: var(--muted); }
   .modes::-webkit-scrollbar, .scenario-bar::-webkit-scrollbar { display: none; }
   .mode { flex: none; padding: 8px 14px; font-size: 14px; }
   .settings { display: none; }
-  body.settings-open .settings { display: grid; grid-template-columns: auto 1fr; gap: 8px 10px; align-items: center; font-size: 14px; padding-top: 4px; border-top: 1px solid var(--line); }
+  body.settings-open .settings { display: grid; grid-template-columns: auto 1fr; gap: 10px 12px; align-items: center; font-size: 15px; position: fixed; left: 0; right: 0; bottom: 0; z-index: 14; background: var(--surface); border-top: 1px solid var(--line); border-radius: 16px 16px 0 0; box-shadow: 0 -8px 30px rgba(0,0,0,.25); padding: 18px max(16px, env(safe-area-inset-right, 0px)) max(16px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px)); max-height: 80%; overflow-y: auto; }
+  body.settings-open .settings .settings-ok { display: block; grid-column: 1 / -1; height: 48px; }
+  body.settings-open::after { content: ""; position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 13; }
   body.settings-open .settings select { width: 100%; padding: 8px; font-size: 16px; }
   .scenario-bar { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; padding-block: 8px; }
   .scenario-bar .eyebrow { flex: none; }
@@ -201,7 +204,39 @@ aside .saved span.ptw { color: var(--muted); }
   .quiz .opts button { padding: 12px; }
   .starters button { padding: 9px 12px; font-size: 14px; }
 }
-@media (min-width: 701px) { .install { display: none !important; } }
+@media (min-width: 701px) and (min-height: 501px), (min-width: 701px) and (pointer: fine) { .install { display: none !important; } }
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .ghost.small { min-height: 40px; padding: 8px 12px; font-size: 13px; }
+  /* settings never push the bottom bar off the screen */
+  /* during a call the conversation gets the space: hide the mode row, keep topics and big buttons */
+  body.in-call .modes { display: none; }
+  body.in-call .statusrow .ghost.small { display: none; }
+}
+@media (max-height: 640px) and (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  body.in-call .call, body.in-call .done { height: 48px; font-size: 16px; }
+  body.in-call .log { padding-block: 8px; }
+  .scenario-bar { padding-block: 6px; }
+}
+@media (max-height: 500px) and (pointer: coarse) {
+  body.in-call .scenario-bar { display: none; }
+  body.in-call .row { flex-wrap: nowrap; }
+  .empty h2 { font-size: 16px; }
+}
+/* tablets: progress panel through the 📊 button, settings stay visible */
+@media (max-width: 860px) {
+  .hbtns { display: flex; }
+  body.notes-open aside.notes { display: flex; position: fixed; inset: 0; z-index: 15; border: 0; padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); font-size: 15px; }
+  body.notes-open .notes-head { display: flex; align-items: center; justify-content: space-between; }
+}
+@media (min-width: 701px) and (max-width: 860px) and (min-height: 501px), (min-width: 701px) and (max-width: 860px) and (pointer: fine) { #gearBtn { display: none; } header.top .titlerow { display: flex; align-items: center; gap: 8px; flex: 1 1 100%; } }
+@media (max-width: 359px) { .xpchip { display: none !important; } }
+body[data-mode="vocab"] .composer .row, body[data-mode="tasks"] .composer .row { display: none; }
+/* any touch screen: comfortable tap sizes */
+@media (pointer: coarse) {
+  .mode { min-height: 40px; }
+  .settings select { min-height: 40px; font-size: 16px; }
+  .chip, .tools button, .ghost { min-height: 36px; }
+}
 
 /* activities */
 .ex { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; max-width: 72ch; }
@@ -234,10 +269,14 @@ aside .saved span.ptw { color: var(--muted); }
 .summary .big { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .summary ul { margin: 0; padding-left: 18px; }
 
-.gate { position: fixed; inset: 0; background: var(--bg); display: grid; place-items: center; padding: 16px; z-index: 20; }
-.gate form { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px; max-width: 380px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+.gate { position: fixed; inset: 0; background: var(--bg); display: grid; grid-template-columns: minmax(0, 380px); justify-content: center; align-content: center; padding: max(16px, env(safe-area-inset-top, 0px)) 16px 16px; z-index: 20; overflow-y: auto; }
+.gate form { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; width: 100%; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
 .gate input { font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--fg); }
 .gate p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.gaterow { display: flex; gap: 8px; }
+.gaterow input { flex: 1; min-width: 0; font-size: 16px; }
+.gate .send { height: 48px; }
+.gate .status.err { min-height: 1.2em; }
 </style>
 </head>
 <body data-mode="chat">
@@ -245,9 +284,9 @@ aside .saved span.ptw { color: var(--muted); }
 <div class="gate" id="gate" hidden>
   <form id="gateForm">
     <h2>Tech English Coach</h2>
-    <p>Digite o código de acesso para usar o coach.</p>
-    <input id="gateCode" type="password" placeholder="Código de acesso" autocomplete="current-password" aria-label="Código de acesso">
-    <button class="send" type="submit">Entrar</button>
+    <p>Digite o código de acesso. Este aparelho fica lembrado por 1 ano.</p>
+    <div class="gaterow"><input id="gateCode" type="password" placeholder="Código de acesso" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-label="Código de acesso"><button type="button" class="iconbtn" id="gateShow" aria-label="Mostrar código">👁</button></div>
+    <button class="send" type="submit" id="gateBtn">Entrar</button>
     <p id="gateErr" class="status err"></p>
   </form>
 </div>
@@ -281,6 +320,7 @@ aside .saved span.ptw { color: var(--muted); }
     <select id="engine"><option value="realtime" selected>tempo real</option><option value="classic">clássica</option></select>
     <label for="auto">Ler respostas</label>
     <select id="auto"><option value="1" selected>sim</option><option value="0">não</option></select>
+    <button class="send settings-ok" id="settingsOk" type="button">Pronto</button>
   </div>
 </header>
 <div class="install" id="install" hidden><span id="installText">Instale o coach como app no celular.</span><button class="chip" id="installBtn">Instalar</button><button class="iconbtn" id="installClose" aria-label="Fechar">✕</button></div>
@@ -343,7 +383,9 @@ aside .saved span.ptw { color: var(--muted); }
   let callActive = false, speaking = false;
   const stats = { msgs: 0, fix: 0, quizOk: 0, quizN: 0 };
   let saved = [], code = "";
-  try { saved = JSON.parse(localStorage.getItem("tec_saved") || "[]"); code = localStorage.getItem("tec_code") || ""; } catch (e) {}
+  try { code = localStorage.getItem("tec_code") || ""; } catch (e) {}
+  try { saved = JSON.parse(localStorage.getItem("tec_saved") || "[]"); if (!Array.isArray(saved)) saved = []; } catch (e) { saved = []; }
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch (e) {} // ask the browser not to clear this site's data
 
   const SCENARIOS = {
     sim: [
@@ -498,6 +540,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
   }
 
   // ---------- microphone: recorder + OpenAI transcription (replaces the browser's own recognizer) ----------
+  const TAP = window.matchMedia && matchMedia("(pointer: coarse)").matches ? "toque" : "clique";
   const canRecord = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
   const rec = canRecord; // truthy when voice input is possible (the exercises check it)
   let listening = false, recSession = null, micStream = null;
@@ -604,7 +647,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
     document.body.classList.toggle("in-call", callActive);
     keepAwake(callActive);
     callBtn.dataset.state = callActive ? s : "idle";
-    callLabel.textContent = !callActive ? "Conversar por voz" : ({ connecting: "Conectando...", listening: "Pode falar (clique para encerrar)", hearing: "Ouvindo você...", thinking: "Pensando...", speaking: "Coach falando" })[s] || "Em chamada";
+    callLabel.textContent = !callActive ? "Conversar por voz" : ({ connecting: "Conectando...", listening: "Pode falar (" + TAP + " para encerrar)", hearing: "Ouvindo você...", thinking: "Pensando...", speaking: "Coach falando" })[s] || "Em chamada";
   }
 
   // ---------- turn-taking: how long the coach waits, or manual "I'm done" ----------
@@ -628,7 +671,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
   turnSel.addEventListener("change", () => {
     try { localStorage.setItem("tec_turn", turnSel.value); } catch (e) {}
     applyTurn();
-    if (callActive) setStatus(manualTurn() ? "Fale com calma e clique em Terminei (ou barra de espaço) quando acabar." : "O coach agora espera " + (Number(turnSel.value) / 1000).toString().replace(".", ",") + " s de silêncio antes de responder.");
+    if (callActive) setStatus(manualTurn() ? "Fale com calma e " + TAP + " em Terminei quando acabar." : "O coach agora espera " + (Number(turnSel.value) / 1000).toString().replace(".", ",") + " s de silêncio antes de responder.");
   });
   doneBtn.addEventListener("click", finishTurn);
   document.addEventListener("keydown", (e) => {
@@ -782,7 +825,7 @@ Rules: "correction" only for a REAL grammar or vocabulary mistake, the single mo
   if (!canRecord) { callBtn.disabled = true; callBtn.title = "Este navegador não dá acesso ao microfone. Use Chrome ou Edge atualizados."; }
   callBtn.addEventListener("click", async () => {
     if (callActive) { endCall(); setStatus("Chamada encerrada."); return; }
-    if (!code) { showGate(); return; }
+    if (!$("#gate").hidden) return;
     if (mode === "vocab" || mode === "tasks") { setStatus("Neste modo, use os botões do próprio exercício. A chamada por voz é para Conversa, Simulação e Gramática."); return; }
     unlockAudio(); cancelPending(); stopAudio();
     callActive = true; callBtn.setAttribute("aria-pressed", "true"); setCallState("connecting"); setStatus("");
@@ -794,12 +837,12 @@ Rules: "correction" only for a REAL grammar or vocabulary mistake, the single mo
       try {
         await withTimeout(startRealtime(), 15000, "a conexão demorou demais");
         if (!callActive) { teardownRealtime(); return; }
-        setStatus(manualTurn() ? "Conectado. Fale com calma e clique em Terminei (ou barra de espaço) quando acabar." : "Conectado. O coach espera " + (Number(turnSel.value) / 1000).toString().replace(".", ",") + " s de silêncio antes de responder; se ainda cortar você, aumente em Tempo para pensar.");
+        setStatus(manualTurn() ? "Conectado. Fale com calma e " + TAP + " em Terminei quando acabar." : "Conectado. O coach espera " + (Number(turnSel.value) / 1000).toString().replace(".", ",") + " s de silêncio antes de responder; se ainda cortar você, aumente em Tempo para pensar.");
         return;
       } catch (e) {
         teardownRealtime();
         if (!callActive) return;
-        if (e && (e.code === "bad_code" || e.code === "no_api_key" || e.code === "no_password")) { setStatus(copyFor(e), true); endCall(); if (e.code === "bad_code") showGate(); return; }
+        if (e && (e.code === "bad_code" || e.code === "no_api_key" || e.code === "no_password")) { setStatus(copyFor(e), true); endCall(); if (e.code === "bad_code") recheckAccess(); return; }
         setStatus("Tempo real indisponível (" + ((e && e.message) || e) + "). Usando o modo clássico.", true);
       }
     }
@@ -867,7 +910,7 @@ Rules: "correction" only for a REAL grammar or vocabulary mistake, the single mo
       if (e && e.name === "AbortError") return; // a newer request took over; it manages state
       think.remove(); turns.pop(); busy = false; sendBtn.disabled = false;
       const msg = copyFor(e); if (msg) setStatus(msg, true);
-      if (e && e.code === "bad_code") { code = ""; try { localStorage.removeItem("tec_code"); } catch (x) {} showGate(); }
+      if (e && e.code === "bad_code") recheckAccess();
       if (callActive) { if (e && (e.code === "no_api_key" || e.code === "no_password" || e.code === "bad_code")) endCall(); else startListening(); }
     }
   }
@@ -1031,7 +1074,7 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
       const mic = el("button", "btn rec", "🎤 Falar"); if (!rec) mic.disabled = true;
       mic.addEventListener("click", () => {
         if (listening) { finishListening(); mic.textContent = "Transcrevendo..."; return; }
-        mic.setAttribute("aria-pressed", "true"); mic.textContent = "Ouvindo... (clique para parar)"; said.textContent = "Fale agora.";
+        mic.setAttribute("aria-pressed", "true"); mic.textContent = "Ouvindo... (" + TAP + " para parar)"; said.textContent = "Fale agora.";
         listenOnce((finalText) => { mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎤 Falar"; said.textContent = ""; grade(finalText); }, (txt) => { said.textContent = txt + "…"; });
       });
       inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && inp.value.trim()) grade(inp.value.trim()); });
@@ -1064,7 +1107,7 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
         pool.textContent = ""; ans.textContent = "";
         shuffledWords.forEach((w, idx) => { if (chosen.includes(idx)) return; const c = el("button", "chip", w); c.addEventListener("click", () => { chosen.push(idx); draw(); }); pool.append(c); });
         chosen.forEach((idx, pos) => { const c = el("button", "chip", shuffledWords[idx]); c.addEventListener("click", () => { chosen.splice(pos, 1); draw(); }); ans.append(c); });
-        if (!ans.children.length) ans.append(el("span", "said", "clique nas palavras na ordem certa"));
+        if (!ans.children.length) ans.append(el("span", "said", TAP + " nas palavras na ordem certa"));
       };
       let shuffledWords = shuffle(words); if (words.length > 1 && shuffledWords.join(" ") === words.join(" ")) shuffledWords = shuffledWords.reverse();
       draw(); box.append(ans, pool);
@@ -1156,16 +1199,38 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
   $("#level").addEventListener("change", () => setStatus("Nível alterado: vale a partir da próxima mensagem."));
 
   // ---------- access gate ----------
-  function showGate() { $("#gate").hidden = false; $("#gateCode").focus(); }
-  $("#gateForm").addEventListener("submit", (e) => {
-    e.preventDefault(); code = $("#gateCode").value.trim(); if (!code) return;
-    try { localStorage.setItem("tec_code", code); } catch (x) {}
-    $("#gate").hidden = true; $("#gateErr").textContent = ""; setStatus("");
+  // The server remembers this device with a 1-year cookie after the first correct code,
+  // so the code is asked again only on a new device or browser.
+  function showGate(msg) { $("#gate").hidden = false; $("#gateErr").textContent = msg || ""; setTimeout(() => $("#gateCode").focus(), 50); }
+  function hideGate() { $("#gate").hidden = true; $("#gateErr").textContent = ""; }
+  async function checkDevice() {
+    try { const r = await fetch("/api/login", { credentials: "same-origin", headers: code ? { "x-app-code": code } : {} }); const d = await r.json().catch(() => ({})); return !!d.ok; }
+    catch (e) { return null; } // offline / network error: do not decide
+  }
+  async function recheckAccess() {
+    const ok = await checkDevice();
+    if (ok === false) { code = ""; try { localStorage.removeItem("tec_code"); } catch (x) {} showGate("O código mudou ou expirou. Digite o código atual."); }
+  }
+  $("#gateShow").addEventListener("click", () => { const i = $("#gateCode"); i.type = i.type === "password" ? "text" : "password"; i.focus(); });
+  $("#gateForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const typed = $("#gateCode").value.trim(); if (!typed) { $("#gateCode").focus(); return; }
+    const btn = $("#gateBtn"); btn.disabled = true; btn.textContent = "Conferindo..."; $("#gateErr").textContent = "";
+    try {
+      const r = await fetch("/api/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: typed }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.ok) { code = typed; try { localStorage.setItem("tec_code", typed); } catch (x) {} $("#gateCode").value = ""; hideGate(); setStatus(""); }
+      else showGate(d.message || "Código incorreto. Confira e tente de novo.");
+    } catch (x) { showGate("Sem conexão com o servidor. Confira a internet e tente de novo."); }
+    finally { btn.disabled = false; btn.textContent = "Entrar"; }
   });
 
   // ---------- phone shell ----------
   const gearBtn = $("#gearBtn"), notesBtn = $("#notesBtn");
+  const closeSettings = () => { document.body.classList.remove("settings-open"); gearBtn.setAttribute("aria-expanded", "false"); };
   gearBtn.addEventListener("click", () => { const on = document.body.classList.toggle("settings-open"); gearBtn.setAttribute("aria-expanded", String(on)); });
+  $("#settingsOk").addEventListener("click", closeSettings);
+  document.addEventListener("click", (e) => { if (document.body.classList.contains("settings-open") && !e.target.closest(".settings") && !e.target.closest("#gearBtn")) closeSettings(); });
   notesBtn.addEventListener("click", () => { document.body.classList.add("notes-open"); notesBtn.setAttribute("aria-expanded", "true"); });
   $("#closeNotes").addEventListener("click", () => { document.body.classList.remove("notes-open"); notesBtn.setAttribute("aria-expanded", "false"); });
   document.querySelectorAll(".mode").forEach(b => b.addEventListener("click", () => { document.body.classList.remove("settings-open"); gearBtn.setAttribute("aria-expanded", "false"); }));
@@ -1196,7 +1261,9 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
 
   // ---------- boot ----------
   renderSaved(); renderScenarioBar(); showEmpty(); bump(); renderProgress();
-  if (!code) showGate();
+  // already remembered (cookie) or a saved code that still works: no code screen
+  const hadCode = !!code;
+  checkDevice().then(ok => { if (ok === false) { code = ""; try { localStorage.removeItem("tec_code"); } catch (x) {} showGate(hadCode ? "O código salvo não vale mais. Digite o código atual." : ""); } });
   if (!canRecord) setStatus("Para usar o microfone, abra este site no Chrome ou Edge atualizados. Por texto funciona em qualquer navegador.", true);
 })();
 </script>

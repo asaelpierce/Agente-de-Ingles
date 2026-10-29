@@ -3,14 +3,14 @@
 //           OPENAI_TTS_VOICE (default "nova"), APP_PASSWORD.
 // Without OPENAI_API_KEY the route answers 404 and the page falls back to the browser's own voice.
 
+const { guard } = require("./_auth");
+
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
   if (req.method !== "POST") { res.status(405).json({ error: "method_not_allowed" }); return; }
   const key = process.env.OPENAI_API_KEY;
   if (!key) { res.status(404).json({ error: "tts_unavailable" }); return; }
-  const expected = process.env.APP_PASSWORD;
-  if (!expected) { res.status(500).json({ error: "no_password" }); return; }
-  if ((req.headers["x-app-code"] || "") !== expected) { res.status(401).json({ error: "bad_code" }); return; }
+  if (!guard(req, res)) return;
 
   let body = req.body;
   if (typeof body === "string") { try { body = JSON.parse(body); } catch (e) { body = null; } }
