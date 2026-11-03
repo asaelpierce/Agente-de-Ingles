@@ -2,7 +2,7 @@
 // Body (JSON): { audio: base64 string, mime: "audio/webm" | "audio/mp4" | ..., language?: "en", prompt?: string }
 // Env vars: OPENAI_API_KEY, APP_PASSWORD, OPENAI_TRANSCRIBE_MODEL (default gpt-transcribe).
 
-const { guard } = require("./_auth");
+const { guard } = require("../lib/auth");
 const PREFERRED = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-transcribe";
 const MODELS = [PREFERRED, "gpt-transcribe", "gpt-4o-transcribe", "gpt-4o-mini-transcribe", "whisper-1"].filter((m, i, a) => a.indexOf(m) === i);
 const BASE_PROMPT = "A Brazilian IT professional practicing English. Tech terms: deploy, bug, API, server, database, pull request, merge, commit, ticket, sprint, standup, backend, frontend, cloud, pipeline, automation.";

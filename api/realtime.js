@@ -3,7 +3,7 @@
 // Env vars: OPENAI_API_KEY, APP_PASSWORD, OPENAI_REALTIME_MODEL (default gpt-realtime-2.1),
 //           OPENAI_REALTIME_VOICE (default marin), OPENAI_TRANSCRIBE_MODEL (default gpt-transcribe).
 
-const { guard } = require("./_auth");
+const { guard } = require("../lib/auth");
 const MODEL = process.env.OPENAI_REALTIME_MODEL || "gpt-realtime-2.1";
 const VOICE = process.env.OPENAI_REALTIME_VOICE || "marin";
 const TRANSCRIBE = process.env.OPENAI_TRANSCRIBE_MODEL || "gpt-transcribe";

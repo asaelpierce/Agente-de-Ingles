@@ -150,7 +150,8 @@ aside.notes h2 { font-size: 13px; font-weight: 600; }
 aside .stat { display: flex; justify-content: space-between; font-variant-numeric: tabular-nums; padding: 4px 0; border-bottom: 1px solid var(--line); }
 aside ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
 aside .saved { display: flex; flex-direction: column; gap: 4px; }
-aside .saved div { display: flex; justify-content: space-between; gap: 8px; cursor: pointer; }
+.howto-say { margin: 0 0 8px; font-size: 13px; color: var(--muted); }
+.howto-say b { color: var(--fg); }
 aside .saved span.en { font-weight: 500; }
 aside .saved span.ptw { color: var(--muted); }
 .ghost { border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 6px; padding: 5px 10px; font-size: 13px; }
@@ -238,6 +239,23 @@ body[data-mode="vocab"] .composer .row, body[data-mode="tasks"] .composer .row {
   .chip, .tools button, .ghost { min-height: 36px; }
 }
 
+/* pronunciation written the Brazilian way */
+.say-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 68ch; }
+.say { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: start; column-gap: 6px; }
+.say-i { font-size: 14px; line-height: 34px; }
+.say-t { align-self: center; }
+.say-t { border: 0; background: transparent; padding: 2px 0; color: var(--accent); font-weight: 600; font-size: 15px; letter-spacing: .01em; text-align: left; cursor: pointer; overflow-wrap: anywhere; min-width: 0; }
+.say-t.ask { font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.say.compact .say-t { font-size: 14px; }
+.say-b { width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; padding: 0; display: grid; place-items: center; flex: none; }
+.say-legend { font-size: 13px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
+.msg.coach .say-wrap { margin-top: -2px; }
+.saved-item { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.saved-item > div:first-child { display: flex; justify-content: space-between; gap: 8px; cursor: pointer; }
+.saysmall { font-size: 13px; color: var(--accent); }
+.term.lookup { max-width: 520px; border-color: var(--accent); }
+.ex .say-t { font-size: 17px; }
+
 /* activities */
 .ex { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; max-width: 72ch; }
 .ex .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -318,6 +336,8 @@ body[data-mode="vocab"] .composer .row, body[data-mode="tasks"] .composer .row {
     <select id="turn"><option value="1200">curto (1,2 s)</option><option value="2500" selected>médio (2,5 s)</option><option value="4000">longo (4 s)</option><option value="manual">eu aviso quando terminar</option></select>
     <label for="engine">Chamada</label>
     <select id="engine"><option value="realtime" selected>tempo real</option><option value="classic">clássica</option></select>
+    <label for="sayMode">Pronúncia escrita</label>
+    <select id="sayMode"><option value="show" selected>mostrar sempre</option><option value="tap">só quando eu tocar</option></select>
     <label for="auto">Ler respostas</label>
     <select id="auto"><option value="1" selected>sim</option><option value="0">não</option></select>
     <button class="send settings-ok" id="settingsOk" type="button">Pronto</button>
@@ -361,6 +381,7 @@ body[data-mode="vocab"] .composer .row, body[data-mode="tasks"] .composer .row {
     </div>
     <div>
       <h2>Como usar</h2>
+      <p class="howto-say"><b>🗣 Como ler a pronúncia:</b> <span id="legendText"></span></p>
       <ul>
         <li><b>Conversar por voz</b>: clique uma vez, fale em inglês e espere. O coach responde falando e volta a te ouvir. Clique de novo para encerrar.</li>
         <li>Use Chrome ou Edge para o microfone funcionar.</li>
@@ -448,7 +469,9 @@ Rules:
 - The "reply" will be read aloud by text-to-speech: no emojis, no lists, no markdown.
 
 Always answer with ONLY one JSON object, no markdown, in this exact shape:
-{"reply": "your English reply", "reply_pt": "Portuguese translation of reply", "correction": null or {"original": "the wrong part the student said", "fixed": "the corrected English", "why_pt": "short explanation in Portuguese"}, "tip_pt": "optional short tip in Portuguese about vocabulary, grammar or pronunciation from this exchange, or empty string", "praise_pt": "if the student did something well, one short compliment in Portuguese naming what was good, else empty string"}`;
+{"reply": "your English reply", "reply_pt": "Portuguese translation of reply", "reply_say": "respelling of reply (see rules below)", "correction": null or {"original": "the wrong part the student said", "fixed": "the corrected English", "fixed_say": "respelling of fixed", "why_pt": "short explanation in Portuguese"}, "tip_pt": "optional short tip in Portuguese about vocabulary, grammar or pronunciation from this exchange, or empty string", "praise_pt": "if the student did something well, one short compliment in Portuguese naming what was good, else empty string"}
+
+${SAY_GUIDE}`;
 
   function modeRules() {
     if (mode === "sim") { const s = SCENARIOS.sim.find(x => x[0] === scenario) || SCENARIOS.sim[0]; return BASE_RULES() + `\n\nMode: role-play simulation. Scenario: ${s[2]} Stay in character. Begin the scene with your first line.`; }
@@ -507,7 +530,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
   function speakBrowser(text, done, id) {
     if (!hasTTS) { done(); return; }
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "en-US"; if (voice) u.voice = voice; u.rate = parseFloat($("#rate").value);
+    u.lang = "en-US"; if (voice) u.voice = voice; u.rate = curRate;
     let started = false;
     u.onstart = () => { started = true; };
     u.onend = done; u.onerror = done;
@@ -518,7 +541,7 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
   }
   async function speakNatural(text, done, id) {
     try {
-      const r = await fetch("/api/tts", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ text, speed: parseFloat($("#rate").value) }) });
+      const r = await fetch("/api/tts", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ text, speed: curRate }) });
       if (id !== speakSeq || !speaking) return; // cancelled or superseded meanwhile
       if (r.status === 404) { naturalAvailable = false; speakBrowser(text, done, id); return; }
       if (!r.ok) throw new Error("tts " + r.status);
@@ -530,7 +553,9 @@ Always answer with ONLY one JSON object, no markdown, in this exact shape:
       await audioEl.play();
     } catch (e) { if (id === speakSeq && speaking) speakBrowser(text, done, id); }
   }
-  function speak(text, onDone) {
+  let curRate = 0.95;
+  function speak(text, onDone, rate) {
+    curRate = rate || parseFloat($("#rate").value) || 0.95;
     stopAudio(); stopListening();
     const id = ++speakSeq;
     speaking = true; setCallState("speaking");
@@ -717,6 +742,7 @@ ${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet 
   }
   function finishCoachBubble(c, text) {
     c.b.textContent = text; c.text = text; lastCoachLine = text;
+    c.m.append(sayRow(text));
     const pt = el("div", "pt", ""); pt.hidden = true;
     const tools = el("div", "tools"); tools.append(speakBtn(text));
     const tb = el("button", null, "PT"); tb.addEventListener("click", () => toggleTranslation(text, pt, tb)); tools.append(tb);
@@ -725,7 +751,7 @@ ${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet 
   async function toggleTranslation(text, pt, btn) {
     if (pt.textContent) { pt.hidden = !pt.hidden; return; }
     btn.disabled = true; pt.hidden = false; pt.textContent = "Traduzindo...";
-    try { const t = await callApi('Translate the English text to natural Brazilian Portuguese. Reply with ONLY JSON: {"pt": "..."}', [{ role: "user", content: text }], 300, undefined, "fast"); const d = parseJSON(t) || {}; pt.textContent = d.pt || t; }
+    try { const v = await getSay(text); pt.textContent = v.pt || "(sem tradução)"; }
     catch (e) { pt.textContent = copyFor(e); setTimeout(() => { pt.textContent = ""; pt.hidden = true; }, 2500); }
     finally { btn.disabled = false; }
   }
@@ -789,8 +815,9 @@ ${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet 
 
   // ---------- feedback cards for spoken turns (fast model, runs in parallel with the voice) ----------
   const FEEDBACK_RULES = () => `You review ONE thing a Brazilian IT professional (CEFR ${$("#level").value}) just SAID in English during a voice lesson. The text is an automatic speech transcript: ignore punctuation, capitalization, filler words (uh, um), repetitions and small transcription slips.
-Reply with ONLY JSON: {"correction": null or {"original": "the wrong part", "fixed": "corrected English", "why_pt": "short explanation in Portuguese"}, "tip_pt": "", "praise_pt": ""}
-Rules: "correction" only for a REAL grammar or vocabulary mistake, the single most important one; correct English that is merely different is not a mistake. If correction is set, praise_pt MUST be empty. praise_pt only for something specific done well (short, Portuguese). tip_pt only if it adds a useful NEW word or expression for what the student was trying to say, never repeating the correction. Most utterances get at most one item and many get none (use null / empty strings). If the student spoke Portuguese, use correction with original = what they said, fixed = a natural English version, why_pt = "Em inglês, diga assim."`;
+Reply with ONLY JSON: {"correction": null or {"original": "the wrong part", "fixed": "corrected English", "fixed_say": "respelling of fixed", "why_pt": "short explanation in Portuguese"}, "tip_pt": "", "praise_pt": ""}
+Rules: "correction" only for a REAL grammar or vocabulary mistake, the single most important one; correct English that is merely different is not a mistake. If correction is set, praise_pt MUST be empty. praise_pt only for something specific done well (short, Portuguese). tip_pt only if it adds a useful NEW word or expression for what the student was trying to say, never repeating the correction. Most utterances get at most one item and many get none (use null / empty strings). If the student spoke Portuguese, use correction with original = what they said, fixed = a natural English version, why_pt = "Em inglês, diga assim."
+${SAY_GUIDE}`;
   async function requestFeedback(student, coachBefore, anchor) {
     if (!student || student.split(/\s+/).length < 2) return;
     try {
@@ -849,19 +876,68 @@ Rules: "correction" only for a REAL grammar or vocabulary mistake, the single mo
     if (!turns.length) startScene(); else classicListen();
   });
 
+  // ---------- pronunciation written the Brazilian way ("como se lê") ----------
+  const SAY_GUIDE = `PRONUNCIATION RESPELLING ("say" fields): write how a Brazilian should READ the English aloud using Portuguese spelling, like the pronunciation guides Brazilian English teachers post on Instagram, so that reading it as Portuguese produces the English sound. Follow these rules exactly and consistently:
+- One group per English word, separated by spaces. Words with more than one syllable: syllables joined by hyphens, the stressed syllable in CAPITALS (deploy = di-PLÓI, database = DÊI-ta-bêiz, server = SÂR-vâr, yesterday = IÉS-târ-dêi). One-syllable words in lowercase (bug = bâg).
+- Vowels: "â" for the short neutral sound of but/the/a/server (bât, dâ, â); "í" for long ee (need = níd, see = sí); "i" for short i (fix = fiks, it = it); "é" open e (test = tést, help = rrélp); "ê" closed e; "ó" open o (job = djób, not = nót); "ô" closed o; "u" for oo (to = tu, you = iú); "éi" for a in name/day (dêi = day uses closed ê: name = nêim); "ai" for I/my (ai, mai); "áu" for how/now (rráu); "ói" (boy = bói, deploy = di-PLÓI).
+- Consonants: English h = "rr" (help = rrélp, how = rráu); English r = "r" (caipira r) in every position (run = rân, car = kar); w = "u" before vowels (what = uót, we = uí); y = "i" (yes = iés); j and soft g = "dj" (job = djób, page = pêidj); ch = "tch" (check = tchék); sh = "ch" (share = chér); voiceless th = "th" (thank = thénk); voiced th = "dh" (the = dâ is acceptable for "the", but use dh in this, that, them: dhis, dhét); z sound = "z"; s sound between vowels = "ss"; final L = "u" (people = PÍ-pou, email = Í-mêiu).
+- Final consonants stay consonants: never add an "i" or "e" at the end (bug = bâg, not bâgui; fixed = fíkst; deployed = di-PLÓID; asked = ést).
+- Past -ed: "t" after voiceless sounds (fixed = fíkst, worked = uârkt), "d" after voiced (deployed = di-PLÓID, called = kóud), "id" after t/d (started = STÁR-tid).
+- Use standard clear American pronunciation, not slang reductions. Keep it simple enough for an A2 learner to read at a glance.`;
+  const sayCache = new Map(); // English text -> { say, pt }
+  const sayKey = (t) => String(t || "").trim().toLowerCase();
+  const sayMode = () => $("#sayMode").value; // "show" (always) | "tap" (only when asked)
+  async function getSay(en) {
+    const k = sayKey(en); if (sayCache.has(k) && sayCache.get(k).say) return sayCache.get(k);
+    const t = await callApi(`You help a Brazilian learner read English aloud.\n${SAY_GUIDE}\nReply with ONLY JSON: {"say": "respelling of the whole English text", "pt": "natural Brazilian Portuguese translation"}`, [{ role: "user", content: String(en).slice(0, 600) }], 500, undefined, "fast");
+    const d = parseJSON(t) || {};
+    const v = { say: String(d.say || ""), pt: String(d.pt || "") };
+    if (v.say) sayCache.set(k, Object.assign({}, sayCache.get(k) || {}, v));
+    return v;
+  }
+  function rememberSay(en, say, pt) { if (!en || !say) return; sayCache.set(sayKey(en), { say: String(say), pt: pt || ((sayCache.get(sayKey(en)) || {}).pt) || "" }); }
+  const LEGEND = "Leia como se fosse português. MAIÚSCULAS = sílaba mais forte. â = som abafado, como o 'a' de 'cama' falado rápido. rr = som de 'rato' (o h do inglês). r = 'r' caipira, enrolado, em qualquer posição. th = ponta da língua entre os dentes, soprando; dh = igual, mas vibrando. Consoante no fim (bâg, fíkst): pare na consoante, sem colocar 'i' no final.";
+  // A "🗣 como se lê" row for any English text: tap the text or 🐢 to hear it slowly.
+  function sayRow(en, say, compact) {
+    const row = el("div", "say" + (compact ? " compact" : ""));
+    const txt = el("button", "say-t"); txt.type = "button"; txt.title = "Ouvir devagar";
+    const slow = el("button", "say-b", "🐢"); slow.type = "button"; slow.title = "Ouvir devagar"; slow.setAttribute("aria-label", "Ouvir devagar");
+    const help = el("button", "say-b", "?"); help.type = "button"; help.title = "Como ler a pronúncia"; help.setAttribute("aria-label", "Como ler a pronúncia");
+    const legend = el("div", "say-legend", LEGEND); legend.hidden = true;
+    const hearSlow = () => speak(String(en), null, 0.72);
+    slow.addEventListener("click", hearSlow);
+    help.addEventListener("click", () => { legend.hidden = !legend.hidden; });
+    row.append(el("span", "say-i", "🗣"), txt, slow, help);
+    const wrap = el("div", "say-wrap"); wrap.append(row, legend);
+    const fill = async () => {
+      txt.textContent = "…"; txt.disabled = true;
+      try { const v = await getSay(en); txt.textContent = v.say || "(sem pronúncia)"; txt.onclick = hearSlow; }
+      catch (e) { txt.textContent = "toque para ver como se lê"; txt.onclick = fill; }
+      finally { txt.disabled = false; }
+    };
+    if (say) { rememberSay(en, say); txt.textContent = say; txt.onclick = hearSlow; }
+    else if (sayMode() === "show") fill();
+    else { txt.textContent = "ver como se lê"; txt.classList.add("ask"); txt.onclick = fill; }
+    return wrap;
+  }
+
   // ---------- rendering ----------
   function speakBtn(text) { const b = el("button", null, "🔊 ouvir"); b.addEventListener("click", () => speak(text, () => { if (callActive) startListening(); })); return b; }
-  function saveBtn(en, pt) { const b = el("button", null, "★ salvar"); b.addEventListener("click", () => { addSaved(en, pt); b.textContent = "★ salvo"; b.disabled = true; }); return b; }
-  function addSaved(en, pt) { if (saved.some(s => s.en === en)) return; saved.unshift({ en, pt }); saved = saved.slice(0, 80); try { localStorage.setItem("tec_saved", JSON.stringify(saved)); } catch (e) {} renderSaved(); }
+  function saveBtn(en, pt, say) { const b = el("button", null, "★ salvar"); b.addEventListener("click", () => { addSaved(en, pt, say || ((sayCache.get(sayKey(en)) || {}).say) || ""); b.textContent = "★ salvo"; b.disabled = true; }); return b; }
+  function addSaved(en, pt, say) { if (saved.some(s => s.en === en)) return; saved.unshift({ en, pt, say: say || "" }); saved = saved.slice(0, 80); try { localStorage.setItem("tec_saved", JSON.stringify(saved)); } catch (e) {} renderSaved(); }
   function renderSaved() {
     const box = $("#saved"); box.textContent = "";
     if (!saved.length) { const s = el("span", null, "Clique em ★ numa palavra ou correção para salvar aqui."); s.style.color = "var(--muted)"; box.append(s); return; }
-    saved.forEach(s => { const d = el("div"); d.append(el("span", "en", s.en), el("span", "ptw", s.pt || "")); d.title = "Clique para ouvir"; d.addEventListener("click", () => speak(s.en)); box.append(d); });
+    saved.forEach(s => {
+      const d = el("div", "saved-item"); const top = el("div"); top.append(el("span", "en", s.en), el("span", "ptw", s.pt || "")); top.title = "Ouvir"; top.addEventListener("click", () => speak(s.en));
+      d.append(top); if (s.say) d.append(el("div", "saysmall", "🗣 " + s.say)); box.append(d);
+    });
   }
   function addMe(text) { const m = el("div", "msg me"); m.append(el("div", "who", "você"), el("div", "bubble", text)); log.append(m); scrollDown(); stats.msgs++; bump(); }
   function addCoach(d) {
     const m = el("div", "msg coach");
-    m.append(el("div", "who", "coach"), el("div", "bubble", d.reply));
+    m.append(el("div", "who", "coach"), el("div", "bubble", d.reply), sayRow(d.reply, d.reply_say));
+    if (d.reply_pt && d.reply_say) rememberSay(d.reply, d.reply_say, d.reply_pt);
     const pt = el("div", "pt", d.reply_pt || ""); pt.hidden = true;
     const tools = el("div", "tools"); tools.append(speakBtn(d.reply));
     const tb = el("button", null, "PT"); tb.addEventListener("click", () => { pt.hidden = !pt.hidden; }); tools.append(tb);
@@ -874,8 +950,8 @@ Rules: "correction" only for a REAL grammar or vocabulary mistake, the single mo
     if (d.correction && d.correction.fixed) {
       stats.fix++;
       const c = el("div", "card fix"); c.append(el("div", "label", "correção"));
-      const line = el("div"); line.append(el("s", null, d.correction.original || ""), " → ", el("b", null, d.correction.fixed)); c.append(line, el("div", null, d.correction.why_pt || ""));
-      const t = el("div", "tools"); t.append(speakBtn(d.correction.fixed), saveBtn(d.correction.fixed, "")); c.append(t); out.push(c);
+      const line = el("div"); line.append(el("s", null, d.correction.original || ""), " → ", el("b", null, d.correction.fixed)); c.append(line, sayRow(d.correction.fixed, d.correction.fixed_say, true), el("div", null, d.correction.why_pt || ""));
+      const t = el("div", "tools"); t.append(speakBtn(d.correction.fixed), saveBtn(d.correction.fixed, "", d.correction.fixed_say)); c.append(t); out.push(c);
     }
     if (d.praise_pt && !(d.correction && d.correction.fixed)) { const p = el("div", "card ok"); p.append(el("div", "label", "mandou bem"), el("div", null, d.praise_pt)); out.push(p); }
     if (d.tip_pt) { const p = el("div", "card tip"); p.append(el("div", "label", "dica"), el("div", null, d.tip_pt)); out.push(p); }
@@ -929,19 +1005,43 @@ Rules: "correction" only for a REAL grammar or vocabulary mistake, the single mo
     const myCtl = ctl;
     const system = `You are an English tutor for a Brazilian IT professional at CEFR level ${$("#level").value}. Reply with ONLY a JSON object, no markdown.`;
     const prompt = `Topic: "${topic[1]}" (IT / software work). Give 8 useful English words or short expressions for this topic that a Brazilian would actually need at work. Prefer words Brazilians often get wrong or say in "Portuguese-English".
-Shape: {"terms":[{"en":"word or expression","ipa":"simple IPA","pt":"tradução em português","ex":"short example sentence from IT work","note_pt":"short note in Portuguese: common mistake, false friend or pronunciation tip"}], "quiz":[{"q":"question in Portuguese asking how to say something or the meaning of a term","opts":["A","B","C"],"a":0,"why_pt":"explanation in Portuguese"}]}
-The quiz has 4 questions about these terms. "a" is the index of the correct option.`;
+Shape: {"terms":[{"en":"word or expression","say":"respelling of en","ipa":"simple IPA","pt":"tradução em português","ex":"short example sentence from IT work","ex_say":"respelling of ex","note_pt":"short note in Portuguese: common mistake, false friend or pronunciation tip"}], "quiz":[{"q":"question in Portuguese asking how to say something or the meaning of a term","opts":["A","B","C"],"a":0,"why_pt":"explanation in Portuguese"}]}
+The quiz has 4 questions about these terms. "a" is the index of the correct option.
+${SAY_GUIDE}`;
     try { const text = await callApi(system, [{ role: "user", content: prompt }], 1800, myCtl.signal, "fast"); if (myCtl !== ctl) return; think.remove(); const data = parseJSON(text) || {}; renderVocab(topic[1], data); }
     catch (e) { if (e && e.name === "AbortError") return; think.remove(); const m = copyFor(e); if (m) setStatus(m, true); }
     finally { if (myCtl === ctl) { busy = false; sendBtn.disabled = false; } }
+  }
+  function termCard(t) {
+    const c = el("div", "term");
+    c.append(el("div", "en", t.en), sayRow(t.en, t.say), el("div", "ipa", t.ipa || ""), el("div", "pt", t.pt || ""));
+    if (t.ex) c.append(el("div", "ex", t.ex), sayRow(t.ex, t.ex_say, true));
+    if (t.note_pt) c.append(el("div", "note", t.note_pt));
+    const tools = el("div", "tools"); tools.append(speakBtn(t.en));
+    if (t.ex) { const b = el("button", null, "🔊 exemplo"); b.addEventListener("click", () => speak(t.ex)); tools.append(b); }
+    tools.append(saveBtn(t.en, t.pt, t.say)); c.append(tools);
+    return c;
+  }
+  // "Como se fala?": any word or phrase, typed in English or Portuguese
+  async function lookupSay(q) {
+    q = String(q || "").trim(); if (!q) return;
+    log.querySelector(".empty") && (log.textContent = "");
+    const think = addThinking();
+    try {
+      const t = await callApi(`You are an English pronunciation coach for a Brazilian IT professional (CEFR ${$("#level").value}). The student typed a word or phrase, in English or in Portuguese. If it is Portuguese, use the natural English way to say it. Reply with ONLY JSON: {"en": "the English word or phrase", "say": "respelling of en", "ipa": "simple IPA", "pt": "Portuguese meaning", "ex": "one short natural example sentence using it", "ex_say": "respelling of ex", "note_pt": "one short tip in Portuguese about the hardest sound or a common Brazilian mistake"}
+${SAY_GUIDE}`, [{ role: "user", content: q.slice(0, 200) }], 600, undefined, "fast");
+      think.remove();
+      const d = parseJSON(t);
+      if (!d || !d.en) { setStatus("Não consegui montar a pronúncia. Tente de novo.", true); return; }
+      const card = termCard(d); card.classList.add("lookup");
+      log.append(card); scrollDown(); setStatus("");
+    } catch (e) { think.remove(); const m = copyFor(e); if (m) setStatus(m, true); }
   }
   function renderVocab(title, data) {
     const h = el("div", "msg coach"); h.append(el("div", "who", "coach"), el("div", "bubble", "Vocabulário: " + title + ". Ouça cada palavra, repita em voz alta, leia o exemplo e depois faça o quiz.")); log.append(h);
     const grid = el("div", "vocab");
     (data.terms || []).forEach(t => {
-      const c = el("div", "term"); c.append(el("div", "en", t.en), el("div", "ipa", t.ipa || ""), el("div", "pt", t.pt || ""), el("div", "ex", t.ex || ""));
-      if (t.note_pt) c.append(el("div", "note", t.note_pt));
-      const tools = el("div", "tools"); tools.append(speakBtn(t.en)); if (t.ex) { const b = el("button", null, "🔊 exemplo"); b.addEventListener("click", () => speak(t.ex)); tools.append(b); } tools.append(saveBtn(t.en, t.pt)); c.append(tools); grid.append(c);
+      grid.append(termCard(t));
     });
     log.append(grid);
     (data.quiz || []).forEach((q, i) => log.append(renderQuiz(q, i + 1)));
@@ -994,14 +1094,15 @@ The quiz has 4 questions about these terms. "a" is the index of the correct opti
     const len = lvl === "A1" ? "4-6 words" : lvl === "A2" ? "5-8 words" : "7-11 words";
     return `Create ${n} exercises: ${types}. Vary topics and sentence patterns; pick a random IT situation for each. Sentences have ${len}. Random seed: ${Math.random().toString(36).slice(2, 8)}.
 ${words.length ? "Reuse some of these words the student saved: " + words.join(", ") + "." : ""}
-Types and shapes (every exercise has "type", "prompt_pt" and "explain_pt"):
+Types and shapes (every exercise has "type", "prompt_pt" and "explain_pt"; every exercise except choice also has "say" = respelling of its English answer sentence, for fill the respelling of the full sentence with the blank filled in):
 - fill: {"type":"fill","prompt_pt":"...","text":"sentence with exactly one blank written as ___","answer":"the missing word","accept":["other acceptable words"],"explain_pt":"short rule or meaning in Portuguese"} — the blank tests a useful verb, preposition or tech term.
 - dictation: {"type":"dictation","answer":"the English sentence to hear and write","explain_pt":"translation in Portuguese"}.
 - repeat: {"type":"repeat","answer":"the English sentence to hear and say","explain_pt":"pronunciation tip in Portuguese for the hardest word"}.
 - translate: {"type":"translate","text":"frase em português","answer":"best English translation","accept":["other good translations"],"explain_pt":"tip in Portuguese"}.
 - order: {"type":"order","answer":"an English sentence","explain_pt":"why this order, in Portuguese"}.
 - choice: {"type":"choice","text":"question in Portuguese, or an English sentence with ___","options":["A","B","C"],"answer":0,"explain_pt":"why, in Portuguese"} — "answer" is the index of the correct option.
-Reply: {"title_pt":"short title","exercises":[...]}`;
+Reply: {"title_pt":"short title","exercises":[...]}
+${SAY_GUIDE}`;
   }
 
   let act = null; // {list, i, results, kind}
@@ -1042,7 +1143,9 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
       result.append(el("div", null, score >= 1 ? "Certo!" : score >= 0.5 ? "Quase lá." : "Ainda não."));
       if (detail) result.append(detail);
       if (ex.explain_pt) result.append(el("div", null, ex.explain_pt));
-      const ans = el("div"); ans.append("Resposta: ", el("b", null, String(ex.answer)), " "); const hear = el("button", "btn", "🔊 ouvir"); hear.addEventListener("click", () => speak(String(ex.answer))); ans.append(hear); result.append(ans);
+      const full = ex.type === "fill" ? String(ex.text || "").replace("___", ex.answer) : String(ex.answer);
+      const ans = el("div"); ans.append("Resposta: ", el("b", null, ex.type === "choice" ? String((ex.options || [])[Number(ex.answer) || 0] || "") : String(ex.answer)), " "); const hear = el("button", "btn", "🔊 ouvir"); hear.addEventListener("click", () => speak(ex.type === "choice" ? String((ex.options || [])[Number(ex.answer) || 0] || "") : full)); ans.append(hear); result.append(ans);
+      if (ex.type !== "choice" && ex.type !== "repeat") result.append(sayRow(full, ex.say, true));
       [...actions.querySelectorAll("button")].forEach(b => { if (!b.classList.contains("keep")) b.disabled = true; });
       const next = el("button", "btn primary", act.i + 1 < act.list.length ? "Próximo →" : "Ver resultado");
       next.addEventListener("click", () => { act.i++; if (act.i < act.list.length) renderExercise(); else renderSummary(); });
@@ -1067,7 +1170,7 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
       actions.append(hearBtn(ex.answer), checkBtn(ok));
       setTimeout(() => { if (!listening) speak(ex.answer); }, 300);
     } else if (ex.type === "repeat") {
-      const t = el("div", "text", ex.answer); box.append(t);
+      const t = el("div", "text", ex.answer); box.append(t, sayRow(ex.answer, ex.say));
       const said = el("div", "said", rec ? "Clique em Falar e repita a frase." : "Seu navegador não tem reconhecimento de voz; use Chrome ou Edge. Você pode digitar a frase para treinar a escrita."); box.append(said);
       const inp = textInput(); inp.placeholder = "ou digite a frase"; box.append(inp);
       const grade = (v) => { if (!v) { said.textContent = "Não entendi. Tente de novo, mais perto do microfone."; return; } const s = wordSim(v, ex.answer); finish(s >= 0.85 ? 1 : s >= 0.6 ? 0.5 : 0, el("div", "said", "Você disse: " + v)); };
@@ -1144,8 +1247,16 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
     const list = mode === "chat" ? TOPICS : mode === "sim" ? SCENARIOS.sim : mode === "gram" ? SCENARIOS.gram : mode === "vocab" ? VOCAB_TOPICS : mode === "tasks" ? ACT_TYPES : null;
     scenariosBar.hidden = !list; if (!list) return;
     scenariosBar.append(el("span", "eyebrow", mode === "vocab" ? "tema" : mode === "sim" ? "cenário" : mode === "tasks" ? "atividade" : mode === "chat" ? "assunto" : "tópico"));
-    const row = mode === "chat" ? el("div", "chips-row") : scenariosBar; if (row !== scenariosBar) scenariosBar.append(row);
+    const row = (mode === "chat" || mode === "vocab") ? el("div", "chips-row") : scenariosBar; if (row !== scenariosBar) scenariosBar.append(row);
     list.forEach(s => { const b = el("button", "chip", s[1]); b.setAttribute("aria-pressed", String(scenario === s[0])); b.addEventListener("click", () => chooseScene(s[0])); row.append(b); });
+    if (mode === "vocab") {
+      const f = el("form", "topicform");
+      const inp = el("input"); inp.id = "sayInput"; inp.type = "text"; inp.maxLength = 120; inp.placeholder = "Como se fala...?";
+      const go = el("button", "chip", "🗣 Ver pronúncia"); go.type = "submit";
+      f.append(inp, go);
+      f.addEventListener("submit", (e) => { e.preventDefault(); const v = inp.value.trim(); if (!v) { inp.focus(); return; } lookupSay(v); inp.value = ""; });
+      scenariosBar.append(f);
+    }
     if (mode === "chat") {
       if (customTopic) { const b = el("button", "chip", "✎ " + customTopic); b.setAttribute("aria-pressed", String(scenario === "custom")); b.addEventListener("click", () => chooseScene("custom")); row.prepend(b); }
       const f = el("form", "topicform");
@@ -1203,9 +1314,16 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
   // so the code is asked again only on a new device or browser.
   function showGate(msg) { $("#gate").hidden = false; $("#gateErr").textContent = msg || ""; setTimeout(() => $("#gateCode").focus(), 50); }
   function hideGate() { $("#gate").hidden = true; $("#gateErr").textContent = ""; }
+  // true = signed in, false = the server clearly said "not signed in", null = could not tell (server or network problem)
+  let accessProblem = "";
   async function checkDevice() {
-    try { const r = await fetch("/api/login", { credentials: "same-origin", headers: code ? { "x-app-code": code } : {} }); const d = await r.json().catch(() => ({})); return !!d.ok; }
-    catch (e) { return null; } // offline / network error: do not decide
+    try {
+      const r = await fetch("/api/login", { credentials: "same-origin", headers: code ? { "x-app-code": code } : {} });
+      const d = await r.json().catch(() => null);
+      if (r.ok && d && typeof d.ok === "boolean") { accessProblem = ""; return d.ok; }
+      accessProblem = (d && d.message) || ("o servidor respondeu " + r.status);
+      return null;
+    } catch (e) { accessProblem = "sem conexão"; return null; }
   }
   async function recheckAccess() {
     const ok = await checkDevice();
@@ -1218,9 +1336,16 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
     const btn = $("#gateBtn"); btn.disabled = true; btn.textContent = "Conferindo..."; $("#gateErr").textContent = "";
     try {
       const r = await fetch("/api/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: typed }) });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok && d.ok) { code = typed; try { localStorage.setItem("tec_code", typed); } catch (x) {} $("#gateCode").value = ""; hideGate(); setStatus(""); }
-      else showGate(d.message || "Código incorreto. Confira e tente de novo.");
+      const d = await r.json().catch(() => null);
+      const accept = () => { code = typed; try { localStorage.setItem("tec_code", typed); } catch (x) {} $("#gateCode").value = ""; hideGate(); };
+      if (r.ok && d && d.ok) { accept(); setStatus(""); }
+      else if (r.status === 401 && d && d.error === "bad_code") showGate(d.message || "Código incorreto. Confira e tente de novo.");
+      else if (d && d.error === "no_password") showGate(d.message);
+      else {
+        // the check itself failed (server problem), not a wrong code: let you in the old way; the code still goes with every request
+        accept();
+        setStatus("Não consegui confirmar o código (" + ((d && d.message) || ("erro " + r.status)) + "). Entrei mesmo assim.", true);
+      }
     } catch (x) { showGate("Sem conexão com o servidor. Confira a internet e tente de novo."); }
     finally { btn.disabled = false; btn.textContent = "Entrar"; }
   });
@@ -1260,10 +1385,15 @@ Reply: {"title_pt":"short title","exercises":[...]}`;
   window.addEventListener("appinstalled", () => { installBar.hidden = true; });
 
   // ---------- boot ----------
+  $("#legendText").textContent = LEGEND;
   renderSaved(); renderScenarioBar(); showEmpty(); bump(); renderProgress();
   // already remembered (cookie) or a saved code that still works: no code screen
   const hadCode = !!code;
-  checkDevice().then(ok => { if (ok === false) { code = ""; try { localStorage.removeItem("tec_code"); } catch (x) {} showGate(hadCode ? "O código salvo não vale mais. Digite o código atual." : ""); } });
+  checkDevice().then(ok => {
+    if (ok === false) { code = ""; try { localStorage.removeItem("tec_code"); } catch (x) {} showGate(hadCode ? "O código salvo não vale mais. Digite o código atual." : ""); }
+    else if (ok === null && !hadCode) showGate(accessProblem ? "Aviso: não consegui falar com o servidor (" + accessProblem + "). Digite o código mesmo assim." : "");
+    else if (ok === null && accessProblem) setStatus("Aviso: não consegui confirmar o acesso (" + accessProblem + ").", true);
+  });
   if (!canRecord) setStatus("Para usar o microfone, abra este site no Chrome ou Edge atualizados. Por texto funciona em qualquer navegador.", true);
 })();
 </script>

@@ -3,7 +3,7 @@
 //           OPENAI_TTS_VOICE (default "nova"), APP_PASSWORD.
 // Without OPENAI_API_KEY the route answers 404 and the page falls back to the browser's own voice.
 
-const { guard } = require("./_auth");
+const { guard } = require("../lib/auth");
 
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");

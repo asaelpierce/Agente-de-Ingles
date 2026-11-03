@@ -6,7 +6,7 @@
 
 // "smart" tier (activity generation): the most capable model. "fast" tier (chat replies, feedback cards,
 // translations, grading): a quick model with no reasoning, so the student is not kept waiting.
-const { guard } = require("./_auth");
+const { guard } = require("../lib/auth");
 const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-6-astra";
 const OPENAI_REASONING = process.env.OPENAI_REASONING || "low";
 const OPENAI_FAST_MODEL = process.env.OPENAI_FAST_MODEL || "gpt-6-luna";
