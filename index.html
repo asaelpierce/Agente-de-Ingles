@@ -239,22 +239,67 @@ body[data-mode="vocab"] .composer .row, body[data-mode="tasks"] .composer .row {
   .chip, .tools button, .ghost { min-height: 36px; }
 }
 
-/* pronunciation written the Brazilian way */
-.say-wrap { display: flex; flex-direction: column; gap: 4px; max-width: 68ch; }
-.say { display: grid; grid-template-columns: auto minmax(0, 1fr) auto auto; align-items: start; column-gap: 6px; }
-.say-i { font-size: 14px; line-height: 34px; }
-.say-t { align-self: center; }
-.say-t { border: 0; background: transparent; padding: 2px 0; color: var(--accent); font-weight: 600; font-size: 15px; letter-spacing: .01em; text-align: left; cursor: pointer; overflow-wrap: anywhere; min-width: 0; }
-.say-t.ask { font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
-.say.compact .say-t { font-size: 14px; }
-.say-b { width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; padding: 0; display: grid; place-items: center; flex: none; }
-.say-legend { font-size: 13px; color: var(--muted); background: var(--surface-2); border-radius: 8px; padding: 8px 10px; }
-.msg.coach .say-wrap { margin-top: -2px; }
+/* pronunciation card */
+.pron { display: flex; flex-direction: column; gap: 6px; max-width: 72ch; padding: 8px 10px; border-radius: var(--radius); background: var(--surface-2); }
+.pron.compact { padding: 6px 8px; gap: 4px; }
+.pron-words { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px 2px; }
+.pw { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 0; border: 1px solid transparent; background: transparent; color: var(--fg); border-radius: 8px; padding: 3px 6px; cursor: pointer; text-align: left; min-height: 40px; }
+.pw:hover, .pw.sel { border-color: var(--line); background: var(--surface); }
+.pw-say { font-size: 16px; font-weight: 500; line-height: 1.3; color: var(--fg); letter-spacing: .01em; white-space: nowrap; }
+.pron.compact .pw-say { font-size: 15px; }
+.pw-en { font-size: 11.5px; color: var(--muted); line-height: 1.2; }
+.syl.st { font-weight: 700; color: var(--accent); }
+.pw-say .sp { text-decoration: underline; text-decoration-color: var(--warn); text-decoration-thickness: 2px; text-underline-offset: 3px; }
+.pw-say .fin { text-decoration: underline dotted; text-decoration-color: var(--muted); text-underline-offset: 3px; }
+.pw.weak .pw-say { color: var(--muted); font-weight: 400; }
+.pw.weak .syl.st { color: var(--muted); }
+.pw.hard { background: var(--warn-soft); }
+.pw.hard .pw-en { color: var(--warn); font-weight: 600; }
+.pw.missing .pw-say { color: var(--muted); }
+.pw .est { font-size: 11px; color: var(--muted); margin-left: 2px; }
+.pw-link { color: var(--muted); font-size: 15px; align-self: center; margin: 0 -2px 14px; }
+.pw.st-ok { box-shadow: inset 0 -3px 0 var(--good); }
+.pw.st-close { box-shadow: inset 0 -3px 0 var(--accent); }
+.pw.st-wrong { box-shadow: inset 0 -3px 0 var(--warn); background: var(--warn-soft); }
+.pw.st-missing { opacity: .55; box-shadow: inset 0 -3px 0 var(--muted); }
+.pron-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.pb { min-width: 36px; height: 36px; padding: 0 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.pb.practice { font-weight: 600; border-color: var(--accent); color: var(--accent); }
+.pb.practice.rec { background: var(--live-soft); border-color: var(--live); color: var(--live); }
+.pb[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
+.pb.mini { min-width: 30px; height: 30px; padding: 0 6px; font-size: 13px; }
+.pb.again { align-self: flex-start; margin-top: 4px; }
+.pb.pron-ask { height: auto; min-height: 36px; padding: 6px 12px; text-align: left; }
+.pron-loading { color: var(--muted); font-size: 13px; padding: 6px 2px; }
+.pron-ipa { font-family: var(--font-mono); font-size: 13px; color: var(--muted); overflow-wrap: anywhere; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: baseline; }
+.pron-ipa .ipa-t { color: var(--fg); }
+.pron-ipa .ipa-d { font-family: var(--font-body); font-size: 11.5px; }
+.pron-legend, .pron-detail, .pron-result { font-size: 13.5px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.pron-legend { color: var(--muted); }
+.pd-head { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; }
+.pd-head b { font-size: 15px; }
+.pd-say { color: var(--accent); font-weight: 600; }
+.pd-ipa { font-family: var(--font-mono); color: var(--muted); font-size: 13px; }
+.pd-btns { display: inline-flex; gap: 6px; margin-left: auto; }
+.pd-tips { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.pd-sym { font-weight: 700; color: var(--warn); white-space: nowrap; }
+.pd-note { color: var(--muted); font-size: 13px; }
+.pr-top { display: flex; align-items: baseline; gap: 10px; }
+.pr-score { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+.pr-score[data-band="a"] { color: var(--good); } .pr-score[data-band="b"] { color: var(--accent); } .pr-score[data-band="c"], .pr-score[data-band="d"] { color: var(--warn); }
+.pr-lbl { font-weight: 600; }
+.pr-sum { color: var(--fg); }
+.pr-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; color: var(--muted); font-size: 13px; }
+.pr-issues { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.pr-tip { color: var(--muted); font-size: 13px; }
+.pr-heard { color: var(--muted); font-size: 13px; font-style: italic; }
 .saved-item { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; border-bottom: 1px solid var(--line); }
 .saved-item > div:first-child { display: flex; justify-content: space-between; gap: 8px; cursor: pointer; }
 .saysmall { font-size: 13px; color: var(--accent); }
-.term.lookup { max-width: 520px; border-color: var(--accent); }
-.ex .say-t { font-size: 17px; }
+.term.lookup { max-width: 560px; border-color: var(--accent); }
+.term .pron { background: transparent; padding: 4px 0; }
+.msg.coach .pron { margin-top: 2px; }
+.ex .pron .pw-say { font-size: 18px; }
 
 /* activities */
 .ex { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; max-width: 72ch; }
@@ -469,9 +514,7 @@ Rules:
 - The "reply" will be read aloud by text-to-speech: no emojis, no lists, no markdown.
 
 Always answer with ONLY one JSON object, no markdown, in this exact shape:
-{"reply": "your English reply", "reply_pt": "Portuguese translation of reply", "reply_say": "respelling of reply (see rules below)", "correction": null or {"original": "the wrong part the student said", "fixed": "the corrected English", "fixed_say": "respelling of fixed", "why_pt": "short explanation in Portuguese"}, "tip_pt": "optional short tip in Portuguese about vocabulary, grammar or pronunciation from this exchange, or empty string", "praise_pt": "if the student did something well, one short compliment in Portuguese naming what was good, else empty string"}
-
-${SAY_GUIDE}`;
+{"reply": "your English reply", "reply_pt": "Portuguese translation of reply", "correction": null or {"original": "the wrong part the student said", "fixed": "the corrected English", "why_pt": "short explanation in Portuguese"}, "tip_pt": "optional short tip in Portuguese about vocabulary, grammar or pronunciation from this exchange, or empty string", "praise_pt": "if the student did something well, one short compliment in Portuguese naming what was good, else empty string"}`;
 
   function modeRules() {
     if (mode === "sim") { const s = SCENARIOS.sim.find(x => x[0] === scenario) || SCENARIOS.sim[0]; return BASE_RULES() + `\n\nMode: role-play simulation. Scenario: ${s[2]} Stay in character. Begin the scene with your first line.`; }
@@ -751,7 +794,7 @@ ${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet 
   async function toggleTranslation(text, pt, btn) {
     if (pt.textContent) { pt.hidden = !pt.hidden; return; }
     btn.disabled = true; pt.hidden = false; pt.textContent = "Traduzindo...";
-    try { const v = await getSay(text); pt.textContent = v.pt || "(sem tradução)"; }
+    try { const t = await callApi('Translate the English text to natural Brazilian Portuguese. Reply with ONLY JSON: {"pt": "..."}', [{ role: "user", content: text }], 300, undefined, "fast"); const d = parseJSON(t) || {}; pt.textContent = d.pt || t; }
     catch (e) { pt.textContent = copyFor(e); setTimeout(() => { pt.textContent = ""; pt.hidden = true; }, 2500); }
     finally { btn.disabled = false; }
   }
@@ -815,9 +858,8 @@ ${task}${ctxTurns ? "\nConversation so far (continue it naturally, do not greet 
 
   // ---------- feedback cards for spoken turns (fast model, runs in parallel with the voice) ----------
   const FEEDBACK_RULES = () => `You review ONE thing a Brazilian IT professional (CEFR ${$("#level").value}) just SAID in English during a voice lesson. The text is an automatic speech transcript: ignore punctuation, capitalization, filler words (uh, um), repetitions and small transcription slips.
-Reply with ONLY JSON: {"correction": null or {"original": "the wrong part", "fixed": "corrected English", "fixed_say": "respelling of fixed", "why_pt": "short explanation in Portuguese"}, "tip_pt": "", "praise_pt": ""}
-Rules: "correction" only for a REAL grammar or vocabulary mistake, the single most important one; correct English that is merely different is not a mistake. If correction is set, praise_pt MUST be empty. praise_pt only for something specific done well (short, Portuguese). tip_pt only if it adds a useful NEW word or expression for what the student was trying to say, never repeating the correction. Most utterances get at most one item and many get none (use null / empty strings). If the student spoke Portuguese, use correction with original = what they said, fixed = a natural English version, why_pt = "Em inglês, diga assim."
-${SAY_GUIDE}`;
+Reply with ONLY JSON: {"correction": null or {"original": "the wrong part", "fixed": "corrected English", "why_pt": "short explanation in Portuguese"}, "tip_pt": "", "praise_pt": ""}
+Rules: "correction" only for a REAL grammar or vocabulary mistake, the single most important one; correct English that is merely different is not a mistake. If correction is set, praise_pt MUST be empty. praise_pt only for something specific done well (short, Portuguese). tip_pt only if it adds a useful NEW word or expression for what the student was trying to say, never repeating the correction. Most utterances get at most one item and many get none (use null / empty strings). If the student spoke Portuguese, use correction with original = what they said, fixed = a natural English version, why_pt = "Em inglês, diga assim."`;
   async function requestFeedback(student, coachBefore, anchor) {
     if (!student || student.split(/\s+/).length < 2) return;
     try {
@@ -876,54 +918,163 @@ ${SAY_GUIDE}`;
     if (!turns.length) startScene(); else classicListen();
   });
 
-  // ---------- pronunciation written the Brazilian way ("como se lê") ----------
-  const SAY_GUIDE = `PRONUNCIATION RESPELLING ("say" fields): write how a Brazilian should READ the English aloud using Portuguese spelling, like the pronunciation guides Brazilian English teachers post on Instagram, so that reading it as Portuguese produces the English sound. Follow these rules exactly and consistently:
-- One group per English word, separated by spaces. Words with more than one syllable: syllables joined by hyphens, the stressed syllable in CAPITALS (deploy = di-PLÓI, database = DÊI-ta-bêiz, server = SÂR-vâr, yesterday = IÉS-târ-dêi). One-syllable words in lowercase (bug = bâg).
-- Vowels: "â" for the short neutral sound of but/the/a/server (bât, dâ, â); "í" for long ee (need = níd, see = sí); "i" for short i (fix = fiks, it = it); "é" open e (test = tést, help = rrélp); "ê" closed e; "ó" open o (job = djób, not = nót); "ô" closed o; "u" for oo (to = tu, you = iú); "éi" for a in name/day (dêi = day uses closed ê: name = nêim); "ai" for I/my (ai, mai); "áu" for how/now (rráu); "ói" (boy = bói, deploy = di-PLÓI).
-- Consonants: English h = "rr" (help = rrélp, how = rráu); English r = "r" (caipira r) in every position (run = rân, car = kar); w = "u" before vowels (what = uót, we = uí); y = "i" (yes = iés); j and soft g = "dj" (job = djób, page = pêidj); ch = "tch" (check = tchék); sh = "ch" (share = chér); voiceless th = "th" (thank = thénk); voiced th = "dh" (the = dâ is acceptable for "the", but use dh in this, that, them: dhis, dhét); z sound = "z"; s sound between vowels = "ss"; final L = "u" (people = PÍ-pou, email = Í-mêiu).
-- Final consonants stay consonants: never add an "i" or "e" at the end (bug = bâg, not bâgui; fixed = fíkst; deployed = di-PLÓID; asked = ést).
-- Past -ed: "t" after voiceless sounds (fixed = fíkst, worked = uârkt), "d" after voiced (deployed = di-PLÓID, called = kóud), "id" after t/d (started = STÁR-tid).
-- Use standard clear American pronunciation, not slang reductions. Keep it simple enough for an A2 learner to read at a glance.`;
-  const sayCache = new Map(); // English text -> { say, pt }
-  const sayKey = (t) => String(t || "").trim().toLowerCase();
+  // ---------- pronunciation ----------
+  // Built on the server by lib/pron/engine.js: dictionary IPA (General American) -> connected speech -> syllables
+  // and stress -> Portuguese-style respelling with the sounds Portuguese lacks marked. The AI never writes it.
+  const LEGEND = "Leia como se fosse português. A sílaba em MAIÚSCULAS é a mais forte. Letras sublinhadas são sons que não existem no português: toque na palavra para ver como fazer cada um. ‿ = palavras ditas juntas. Palavras em cinza são ditas rápidas e fracas dentro da frase. Padrão: inglês americano.";
+  const SYM = { "θ": "th /θ/", "ð": "dh /ð/", "ɹ": "r /ɹ/", "ɾ": "r /ɾ/", "æ": "é /æ/", "ʌ": "â /ʌ/", "ɝ": "âr /ɝ/", "ɚ": "ar /ɚ/", "ɪ": "i /ɪ/", "ʊ": "u /ʊ/", "h": "rr /h/", "ŋ": "ng /ŋ/", "ɫ": "l /ɫ/", "td": "t/d + i", "sC": "s + consoante", "fin": "final", "weak": "forma fraca", "link": "ligação ‿" };
   const sayMode = () => $("#sayMode").value; // "show" (always) | "tap" (only when asked)
-  async function getSay(en) {
-    const k = sayKey(en); if (sayCache.has(k) && sayCache.get(k).say) return sayCache.get(k);
-    const t = await callApi(`You help a Brazilian learner read English aloud.\n${SAY_GUIDE}\nReply with ONLY JSON: {"say": "respelling of the whole English text", "pt": "natural Brazilian Portuguese translation"}`, [{ role: "user", content: String(en).slice(0, 600) }], 500, undefined, "fast");
-    const d = parseJSON(t) || {};
-    const v = { say: String(d.say || ""), pt: String(d.pt || "") };
-    if (v.say) sayCache.set(k, Object.assign({}, sayCache.get(k) || {}, v));
-    return v;
+  const pronCache = new Map(); // text -> Promise<analysis>
+  function getPron(text) {
+    const k = String(text || "").trim();
+    if (!pronCache.has(k)) {
+      const p = fetch("/api/pronounce", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ text: k }) })
+        .then(async (r) => { const d = await r.json().catch(() => ({})); if (!r.ok) { const e = new Error(d.message || "Erro"); e.code = d.error || "http_" + r.status; throw e; } return d; });
+      p.catch(() => pronCache.delete(k));
+      pronCache.set(k, p);
+    }
+    return pronCache.get(k);
   }
-  function rememberSay(en, say, pt) { if (!en || !say) return; sayCache.set(sayKey(en), { say: String(say), pt: pt || ((sayCache.get(sayKey(en)) || {}).pt) || "" }); }
-  const LEGEND = "Leia como se fosse português. MAIÚSCULAS = sílaba mais forte. â = som abafado, como o 'a' de 'cama' falado rápido. rr = som de 'rato' (o h do inglês). r = 'r' caipira, enrolado, em qualquer posição. th = ponta da língua entre os dentes, soprando; dh = igual, mas vibrando. Consoante no fim (bâg, fíkst): pare na consoante, sem colocar 'i' no final.";
-  // A "🗣 como se lê" row for any English text: tap the text or 🐢 to hear it slowly.
-  function sayRow(en, say, compact) {
-    const row = el("div", "say" + (compact ? " compact" : ""));
-    const txt = el("button", "say-t"); txt.type = "button"; txt.title = "Ouvir devagar";
-    const slow = el("button", "say-b", "🐢"); slow.type = "button"; slow.title = "Ouvir devagar"; slow.setAttribute("aria-label", "Ouvir devagar");
-    const help = el("button", "say-b", "?"); help.type = "button"; help.title = "Como ler a pronúncia"; help.setAttribute("aria-label", "Como ler a pronúncia");
-    const legend = el("div", "say-legend", LEGEND); legend.hidden = true;
-    const hearSlow = () => speak(String(en), null, 0.72);
-    slow.addEventListener("click", hearSlow);
-    help.addEventListener("click", () => { legend.hidden = !legend.hidden; });
-    row.append(el("span", "say-i", "🗣"), txt, slow, help);
-    const wrap = el("div", "say-wrap"); wrap.append(row, legend);
-    const fill = async () => {
-      txt.textContent = "…"; txt.disabled = true;
-      try { const v = await getSay(en); txt.textContent = v.say || "(sem pronúncia)"; txt.onclick = hearSlow; }
-      catch (e) { txt.textContent = "toque para ver como se lê"; txt.onclick = fill; }
-      finally { txt.disabled = false; }
-    };
-    if (say) { rememberSay(en, say); txt.textContent = say; txt.onclick = hearSlow; }
-    else if (sayMode() === "show") fill();
-    else { txt.textContent = "ver como se lê"; txt.classList.add("ask"); txt.onclick = fill; }
-    return wrap;
+  // recording -> 16 kHz mono WAV (the format the pronunciation checker accepts)
+  async function toWav16k(blob) {
+    const AC = window.AudioContext || window.webkitAudioContext, OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+    const ctx = new AC(); const buf = await ctx.decodeAudioData(await blob.arrayBuffer()); try { ctx.close(); } catch (e) {}
+    const sr = 16000, len = Math.max(1, Math.ceil(buf.duration * sr));
+    const off = new OAC(1, len, sr); const src = off.createBufferSource(); src.buffer = buf; src.connect(off.destination); src.start();
+    const pcm = (await off.startRendering()).getChannelData(0);
+    const dv = new DataView(new ArrayBuffer(44 + pcm.length * 2));
+    const str = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+    str(0, "RIFF"); dv.setUint32(4, 36 + pcm.length * 2, true); str(8, "WAVE"); str(12, "fmt "); dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, 1, true);
+    dv.setUint32(24, sr, true); dv.setUint32(28, sr * 2, true); dv.setUint16(32, 2, true); dv.setUint16(34, 16, true); str(36, "data"); dv.setUint32(40, pcm.length * 2, true);
+    for (let i = 0; i < pcm.length; i++) { const v = Math.max(-1, Math.min(1, pcm[i])); dv.setInt16(44 + i * 2, v < 0 ? v * 0x8000 : v * 0x7fff, true); }
+    return new Blob([dv], { type: "audio/wav" });
   }
+  const scoreLabel = (s) => s == null ? "Sem nota" : s >= 85 ? "Muito bem!" : s >= 70 ? "Bom: dá para entender bem" : s >= 50 ? "Quase lá" : "Vamos treinar mais";
+
+  // Pronunciation card for any English text: words with respelling (stress + difficult sounds marked),
+  // native audio at normal and slow speed, IPA on demand, word details with tips, and recorded practice.
+  function pronCard(en, opts) {
+    opts = opts || {}; en = String(en || "").trim();
+    const card = el("div", "pron" + (opts.compact ? " compact" : ""));
+    if (!en) return card;
+    const words = el("div", "pron-words");
+    const bar = el("div", "pron-bar");
+    const ipa = el("div", "pron-ipa"); ipa.hidden = true;
+    const legend = el("div", "pron-legend", LEGEND); legend.hidden = true;
+    const detail = el("div", "pron-detail"); detail.hidden = true;
+    const result = el("div", "pron-result"); result.hidden = true;
+    const btn = (label, title, fn, cls) => { const x = el("button", "pb" + (cls ? " " + cls : ""), label); x.type = "button"; x.title = title; x.setAttribute("aria-label", title); x.addEventListener("click", fn); return x; };
+    const bPractice = btn("🎤 Praticar", "Gravar você falando e comparar com a pronúncia nativa", () => practice(), "practice");
+    const bIpa = btn("IPA", "Mostrar a transcrição fonética (IPA)", () => { ipa.hidden = !ipa.hidden; bIpa.setAttribute("aria-pressed", String(!ipa.hidden)); });
+    bar.append(btn("🔊", "Ouvir", () => speak(en)), btn("🐢", "Ouvir devagar", () => speak(en, null, 0.72)), bPractice, bIpa, btn("?", "Como ler", () => { legend.hidden = !legend.hidden; }));
+    if (opts.noPractice || !canRecord) bPractice.hidden = true;
+    card.append(words, bar, ipa, legend, detail, result);
+    let data = null;
+
+    async function load() {
+      words.textContent = ""; words.append(el("span", "pron-loading", "montando a pronúncia…"));
+      try { data = await getPron(en); draw(); }
+      catch (e) { words.textContent = ""; const retry = btn("não consegui montar a pronúncia: tocar para tentar de novo", "Tentar de novo", load, "pron-ask"); words.append(retry); }
+    }
+    function draw() {
+      words.textContent = "";
+      data.words.forEach((w, i) => {
+        const blk = el("button", "pw" + (w.hard ? " hard" : "") + (w.weak ? " weak" : "") + (w.src === "missing" ? " missing" : ""));
+        blk.type = "button"; blk.dataset.i = i;
+        const s = el("span", "pw-say");
+        if (w.syl) w.syl.forEach((sy, k) => {
+          if (k) s.append("-");
+          const span = el("span", "syl" + (sy.stressed ? " st" : ""));
+          sy.segs.forEach((g) => { if (g.sp || g.fin) { const m = el("span", g.sp ? "sp" : "fin", g.t); if (g.sp) m.dataset.sp = g.sp; span.append(m); } else span.append(g.t); });
+          s.append(span);
+        });
+        else s.textContent = "?";
+        if (w.src === "estimated") s.append(el("span", "est", "≈"));
+        blk.append(s, el("span", "pw-en", w.w || ""));
+        blk.title = (w.ipa ? "/" + w.ipa + "/ · " : "") + "toque para ver os detalhes";
+        blk.addEventListener("click", () => showWord(i, blk));
+        words.append(blk);
+        if (w.link && i < data.words.length - 1) words.append(el("span", "pw-link", "‿"));
+      });
+      ipa.textContent = ""; ipa.append(el("span", "ipa-t", data.ipa || ""), el("span", "ipa-d", "inglês americano"));
+    }
+    function showWord(i, blk) {
+      const w = data.words[i];
+      if (!detail.hidden && detail.dataset.i === String(i)) { detail.hidden = true; blk.classList.remove("sel"); return; }
+      words.querySelectorAll(".pw.sel").forEach(x => x.classList.remove("sel")); blk.classList.add("sel");
+      detail.dataset.i = String(i); detail.hidden = false; detail.textContent = "";
+      const head = el("div", "pd-head");
+      head.append(el("b", null, w.w || ""), el("span", "pd-say", w.say || ""), el("span", "pd-ipa", w.ipa ? "/" + w.ipa + "/" : ""));
+      const hb = el("span", "pd-btns"); hb.append(btn("🔊", "Ouvir a palavra", () => speak(w.w || en)), btn("🐢", "Ouvir a palavra devagar", () => speak(w.w || en, null, 0.72))); head.append(hb);
+      detail.append(head);
+      if (w.src === "missing") detail.append(el("div", "pd-note", "Esta palavra não está no dicionário de pronúncia. Para não inventar, a referência aqui é só o áudio."));
+      if (w.src === "estimated") detail.append(el("div", "pd-note", "≈ Pronúncia estimada: a palavra não está no dicionário. Confira com o áudio."));
+      const tips = (w.tags || []).filter(t => data.tips && data.tips[t]);
+      if (tips.length) { const ul = el("ul", "pd-tips"); tips.forEach(t => { const li = el("li"); li.append(el("span", "pd-sym", SYM[t] || t), " ", data.tips[t]); ul.append(li); }); detail.append(ul); }
+      else if (w.say) detail.append(el("div", "pd-note", "Sem sons difíceis aqui: é só ler como está escrito."));
+    }
+    async function practice() {
+      if (listening) { finishListening(); return; }
+      if (!data) { try { data = await getPron(en); draw(); } catch (e) {} }
+      stopAudio(); unlockAudio();
+      result.hidden = false; result.className = "pron-result"; result.textContent = "Pode falar a frase. Quando terminar, fique em silêncio ou toque em Parar.";
+      bPractice.textContent = "■ Parar"; bPractice.classList.add("rec");
+      const reset = () => { bPractice.textContent = "🎤 Praticar"; bPractice.classList.remove("rec"); };
+      let blob;
+      try { blob = await recordUtterance({ silenceMs: 1400, maxMs: 20000 }); } catch (e) { reset(); micError(e); result.hidden = true; return; }
+      reset();
+      if (!blob) { result.textContent = "Não ouvi nada. Toque em Praticar e fale perto do microfone."; return; }
+      result.textContent = "Analisando os sons da sua fala…";
+      try {
+        const wav = await toWav16k(blob);
+        const r = await fetch("/api/assess", { method: "POST", headers: { "content-type": "application/json", "x-app-code": code }, body: JSON.stringify({ text: en, audio: await blobToBase64(wav) }) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { const e = new Error(d.message || "Erro"); e.code = d.error || "http_" + r.status; throw e; }
+        showResult(d);
+        if (opts.onAssess) opts.onAssess(d);
+      } catch (e) { result.textContent = copyFor(e) || "Não consegui analisar agora. Tente de novo."; }
+    }
+    function showResult(d) {
+      result.textContent = "";
+      words.querySelectorAll(".pw").forEach(x => x.classList.remove("st-ok", "st-close", "st-wrong", "st-missing"));
+      if (!d.ok) { result.append(el("div", null, d.message || "Tente de novo.")); result.append(btn("🎤 Tentar de novo", "Gravar de novo", practice, "again")); return; }
+      (d.words || []).forEach(w => { const blk = words.querySelector('.pw[data-i="' + w.i + '"]'); if (blk && w.status) blk.classList.add("st-" + w.status); });
+      const top = el("div", "pr-top");
+      const sc = el("span", "pr-score", d.score == null ? "–" : String(d.score));
+      sc.dataset.band = d.score == null ? "" : d.score >= 85 ? "a" : d.score >= 70 ? "b" : d.score >= 50 ? "c" : "d";
+      top.append(sc, el("span", "pr-lbl", scoreLabel(d.score)));
+      result.append(top);
+      if (d.summary_pt) result.append(el("div", "pr-sum", d.summary_pt));
+      const meta = el("div", "pr-meta");
+      if (d.intelligibility != null) meta.append(el("span", null, "Deu para entender: " + d.intelligibility + "%"));
+      if (d.stress_ok != null) meta.append(el("span", null, d.stress_ok ? "Tônica: certa" : "Tônica: revisar"));
+      result.append(meta);
+      const issues = []; (d.words || []).forEach(w => (w.issues || []).forEach(x => issues.push({ w, x })));
+      if (issues.length) {
+        const ul = el("ul", "pr-issues");
+        issues.slice(0, 5).forEach(({ w, x }) => {
+          const li = el("li"); const line = el("div");
+          line.append(el("b", null, w.w), " ", x.type === "stress" ? "tônica" : (x.expected ? "esperado /" + x.expected + "/" : ""), x.heard ? ", saiu [" + x.heard + "]" : "", x.type === "insertion" ? " (som a mais)" : x.type === "deletion" ? " (faltou)" : "");
+          li.append(line); if (x.tip) li.append(el("div", "pr-tip", x.tip));
+          const hear = btn("🔊", "Ouvir a palavra", () => speak(w.w, null, 0.72)); hear.classList.add("mini"); line.append(" ", hear);
+          ul.append(li);
+        });
+        result.append(ul);
+      } else if (d.mode === "full") result.append(el("div", "pr-sum", "Nenhum som com problema claro. Continue assim!"));
+      if (d.heard_text != null) result.append(el("div", "pr-heard", "O que um ouvinte entendeu: “" + (d.heard_text || "…") + "”"));
+      if (d.note) result.append(el("div", "pd-note", d.note));
+      result.append(btn("🎤 Tentar de novo", "Gravar de novo", practice, "again"));
+    }
+    if (opts.eager || sayMode() === "show") load();
+    else { const ask = btn("🗣 ver como se fala", "Mostrar a pronúncia", load, "pron-ask"); words.append(ask); }
+    return card;
+  }
+  // kept for the places that already call it
+  function sayRow(en, _unused, compact) { return pronCard(en, { compact: !!compact }); }
 
   // ---------- rendering ----------
   function speakBtn(text) { const b = el("button", null, "🔊 ouvir"); b.addEventListener("click", () => speak(text, () => { if (callActive) startListening(); })); return b; }
-  function saveBtn(en, pt, say) { const b = el("button", null, "★ salvar"); b.addEventListener("click", () => { addSaved(en, pt, say || ((sayCache.get(sayKey(en)) || {}).say) || ""); b.textContent = "★ salvo"; b.disabled = true; }); return b; }
+  function saveBtn(en, pt) { const b = el("button", null, "★ salvar"); b.addEventListener("click", () => { addSaved(en, pt, ""); getPron(en).then(r => { const it = saved.find(x => x.en === en); if (it && r && r.say) { it.say = r.say; try { localStorage.setItem("tec_saved", JSON.stringify(saved)); } catch (e) {} renderSaved(); } }).catch(() => {}); b.textContent = "★ salvo"; b.disabled = true; }); return b; }
   function addSaved(en, pt, say) { if (saved.some(s => s.en === en)) return; saved.unshift({ en, pt, say: say || "" }); saved = saved.slice(0, 80); try { localStorage.setItem("tec_saved", JSON.stringify(saved)); } catch (e) {} renderSaved(); }
   function renderSaved() {
     const box = $("#saved"); box.textContent = "";
@@ -936,8 +1087,7 @@ ${SAY_GUIDE}`;
   function addMe(text) { const m = el("div", "msg me"); m.append(el("div", "who", "você"), el("div", "bubble", text)); log.append(m); scrollDown(); stats.msgs++; bump(); }
   function addCoach(d) {
     const m = el("div", "msg coach");
-    m.append(el("div", "who", "coach"), el("div", "bubble", d.reply), sayRow(d.reply, d.reply_say));
-    if (d.reply_pt && d.reply_say) rememberSay(d.reply, d.reply_say, d.reply_pt);
+    m.append(el("div", "who", "coach"), el("div", "bubble", d.reply), pronCard(d.reply, { compact: true }));
     const pt = el("div", "pt", d.reply_pt || ""); pt.hidden = true;
     const tools = el("div", "tools"); tools.append(speakBtn(d.reply));
     const tb = el("button", null, "PT"); tb.addEventListener("click", () => { pt.hidden = !pt.hidden; }); tools.append(tb);
@@ -950,8 +1100,8 @@ ${SAY_GUIDE}`;
     if (d.correction && d.correction.fixed) {
       stats.fix++;
       const c = el("div", "card fix"); c.append(el("div", "label", "correção"));
-      const line = el("div"); line.append(el("s", null, d.correction.original || ""), " → ", el("b", null, d.correction.fixed)); c.append(line, sayRow(d.correction.fixed, d.correction.fixed_say, true), el("div", null, d.correction.why_pt || ""));
-      const t = el("div", "tools"); t.append(speakBtn(d.correction.fixed), saveBtn(d.correction.fixed, "", d.correction.fixed_say)); c.append(t); out.push(c);
+      const line = el("div"); line.append(el("s", null, d.correction.original || ""), " → ", el("b", null, d.correction.fixed)); c.append(line, pronCard(d.correction.fixed, { compact: true }), el("div", null, d.correction.why_pt || ""));
+      const t = el("div", "tools"); t.append(speakBtn(d.correction.fixed), saveBtn(d.correction.fixed, "")); c.append(t); out.push(c);
     }
     if (d.praise_pt && !(d.correction && d.correction.fixed)) { const p = el("div", "card ok"); p.append(el("div", "label", "mandou bem"), el("div", null, d.praise_pt)); out.push(p); }
     if (d.tip_pt) { const p = el("div", "card tip"); p.append(el("div", "label", "dica"), el("div", null, d.tip_pt)); out.push(p); }
@@ -1005,21 +1155,20 @@ ${SAY_GUIDE}`;
     const myCtl = ctl;
     const system = `You are an English tutor for a Brazilian IT professional at CEFR level ${$("#level").value}. Reply with ONLY a JSON object, no markdown.`;
     const prompt = `Topic: "${topic[1]}" (IT / software work). Give 8 useful English words or short expressions for this topic that a Brazilian would actually need at work. Prefer words Brazilians often get wrong or say in "Portuguese-English".
-Shape: {"terms":[{"en":"word or expression","say":"respelling of en","ipa":"simple IPA","pt":"tradução em português","ex":"short example sentence from IT work","ex_say":"respelling of ex","note_pt":"short note in Portuguese: common mistake, false friend or pronunciation tip"}], "quiz":[{"q":"question in Portuguese asking how to say something or the meaning of a term","opts":["A","B","C"],"a":0,"why_pt":"explanation in Portuguese"}]}
-The quiz has 4 questions about these terms. "a" is the index of the correct option.
-${SAY_GUIDE}`;
+Shape: {"terms":[{"en":"word or expression","pt":"tradução em português","ex":"short example sentence from IT work","note_pt":"short note in Portuguese: common mistake or false friend (do not describe pronunciation)"}], "quiz":[{"q":"question in Portuguese asking how to say something or the meaning of a term","opts":["A","B","C"],"a":0,"why_pt":"explanation in Portuguese"}]}
+The quiz has 4 questions about these terms. "a" is the index of the correct option.`;
     try { const text = await callApi(system, [{ role: "user", content: prompt }], 1800, myCtl.signal, "fast"); if (myCtl !== ctl) return; think.remove(); const data = parseJSON(text) || {}; renderVocab(topic[1], data); }
     catch (e) { if (e && e.name === "AbortError") return; think.remove(); const m = copyFor(e); if (m) setStatus(m, true); }
     finally { if (myCtl === ctl) { busy = false; sendBtn.disabled = false; } }
   }
   function termCard(t) {
     const c = el("div", "term");
-    c.append(el("div", "en", t.en), sayRow(t.en, t.say), el("div", "ipa", t.ipa || ""), el("div", "pt", t.pt || ""));
-    if (t.ex) c.append(el("div", "ex", t.ex), sayRow(t.ex, t.ex_say, true));
+    c.append(el("div", "en", t.en), el("div", "pt", t.pt || ""), pronCard(t.en));
+    if (t.ex) c.append(el("div", "ex", t.ex), pronCard(t.ex, { compact: true }));
     if (t.note_pt) c.append(el("div", "note", t.note_pt));
     const tools = el("div", "tools"); tools.append(speakBtn(t.en));
     if (t.ex) { const b = el("button", null, "🔊 exemplo"); b.addEventListener("click", () => speak(t.ex)); tools.append(b); }
-    tools.append(saveBtn(t.en, t.pt, t.say)); c.append(tools);
+    tools.append(saveBtn(t.en, t.pt)); c.append(tools);
     return c;
   }
   // "Como se fala?": any word or phrase, typed in English or Portuguese
@@ -1028,8 +1177,7 @@ ${SAY_GUIDE}`;
     log.querySelector(".empty") && (log.textContent = "");
     const think = addThinking();
     try {
-      const t = await callApi(`You are an English pronunciation coach for a Brazilian IT professional (CEFR ${$("#level").value}). The student typed a word or phrase, in English or in Portuguese. If it is Portuguese, use the natural English way to say it. Reply with ONLY JSON: {"en": "the English word or phrase", "say": "respelling of en", "ipa": "simple IPA", "pt": "Portuguese meaning", "ex": "one short natural example sentence using it", "ex_say": "respelling of ex", "note_pt": "one short tip in Portuguese about the hardest sound or a common Brazilian mistake"}
-${SAY_GUIDE}`, [{ role: "user", content: q.slice(0, 200) }], 600, undefined, "fast");
+      const t = await callApi(`You are an English pronunciation coach for a Brazilian IT professional (CEFR ${$("#level").value}). The student typed a word or phrase, in English or in Portuguese. If it is Portuguese, use the natural English way to say it. Reply with ONLY JSON: {"en": "the English word or phrase", "pt": "Portuguese meaning", "ex": "one short natural example sentence using it", "note_pt": "one short tip in Portuguese about usage or a common Brazilian mistake (not about pronunciation; that is shown separately)"}`, [{ role: "user", content: q.slice(0, 200) }], 600, undefined, "fast");
       think.remove();
       const d = parseJSON(t);
       if (!d || !d.en) { setStatus("Não consegui montar a pronúncia. Tente de novo.", true); return; }
@@ -1094,15 +1242,14 @@ ${SAY_GUIDE}`, [{ role: "user", content: q.slice(0, 200) }], 600, undefined, "fa
     const len = lvl === "A1" ? "4-6 words" : lvl === "A2" ? "5-8 words" : "7-11 words";
     return `Create ${n} exercises: ${types}. Vary topics and sentence patterns; pick a random IT situation for each. Sentences have ${len}. Random seed: ${Math.random().toString(36).slice(2, 8)}.
 ${words.length ? "Reuse some of these words the student saved: " + words.join(", ") + "." : ""}
-Types and shapes (every exercise has "type", "prompt_pt" and "explain_pt"; every exercise except choice also has "say" = respelling of its English answer sentence, for fill the respelling of the full sentence with the blank filled in):
+Types and shapes (every exercise has "type", "prompt_pt" and "explain_pt"):
 - fill: {"type":"fill","prompt_pt":"...","text":"sentence with exactly one blank written as ___","answer":"the missing word","accept":["other acceptable words"],"explain_pt":"short rule or meaning in Portuguese"} — the blank tests a useful verb, preposition or tech term.
 - dictation: {"type":"dictation","answer":"the English sentence to hear and write","explain_pt":"translation in Portuguese"}.
-- repeat: {"type":"repeat","answer":"the English sentence to hear and say","explain_pt":"pronunciation tip in Portuguese for the hardest word"}.
+- repeat: {"type":"repeat","answer":"the English sentence to hear and say","explain_pt":"short note in Portuguese about the meaning or when to use this sentence"}.
 - translate: {"type":"translate","text":"frase em português","answer":"best English translation","accept":["other good translations"],"explain_pt":"tip in Portuguese"}.
 - order: {"type":"order","answer":"an English sentence","explain_pt":"why this order, in Portuguese"}.
 - choice: {"type":"choice","text":"question in Portuguese, or an English sentence with ___","options":["A","B","C"],"answer":0,"explain_pt":"why, in Portuguese"} — "answer" is the index of the correct option.
-Reply: {"title_pt":"short title","exercises":[...]}
-${SAY_GUIDE}`;
+Reply: {"title_pt":"short title","exercises":[...]}`;
   }
 
   let act = null; // {list, i, results, kind}
@@ -1145,7 +1292,7 @@ ${SAY_GUIDE}`;
       if (ex.explain_pt) result.append(el("div", null, ex.explain_pt));
       const full = ex.type === "fill" ? String(ex.text || "").replace("___", ex.answer) : String(ex.answer);
       const ans = el("div"); ans.append("Resposta: ", el("b", null, ex.type === "choice" ? String((ex.options || [])[Number(ex.answer) || 0] || "") : String(ex.answer)), " "); const hear = el("button", "btn", "🔊 ouvir"); hear.addEventListener("click", () => speak(ex.type === "choice" ? String((ex.options || [])[Number(ex.answer) || 0] || "") : full)); ans.append(hear); result.append(ans);
-      if (ex.type !== "choice" && ex.type !== "repeat") result.append(sayRow(full, ex.say, true));
+      if (ex.type !== "choice" && ex.type !== "repeat") result.append(pronCard(full, { compact: true }));
       [...actions.querySelectorAll("button")].forEach(b => { if (!b.classList.contains("keep")) b.disabled = true; });
       const next = el("button", "btn primary", act.i + 1 < act.list.length ? "Próximo →" : "Ver resultado");
       next.addEventListener("click", () => { act.i++; if (act.i < act.list.length) renderExercise(); else renderSummary(); });
@@ -1170,18 +1317,11 @@ ${SAY_GUIDE}`;
       actions.append(hearBtn(ex.answer), checkBtn(ok));
       setTimeout(() => { if (!listening) speak(ex.answer); }, 300);
     } else if (ex.type === "repeat") {
-      const t = el("div", "text", ex.answer); box.append(t, sayRow(ex.answer, ex.say));
-      const said = el("div", "said", rec ? "Clique em Falar e repita a frase." : "Seu navegador não tem reconhecimento de voz; use Chrome ou Edge. Você pode digitar a frase para treinar a escrita."); box.append(said);
-      const inp = textInput(); inp.placeholder = "ou digite a frase"; box.append(inp);
-      const grade = (v) => { if (!v) { said.textContent = "Não entendi. Tente de novo, mais perto do microfone."; return; } const s = wordSim(v, ex.answer); finish(s >= 0.85 ? 1 : s >= 0.6 ? 0.5 : 0, el("div", "said", "Você disse: " + v)); };
-      const mic = el("button", "btn rec", "🎤 Falar"); if (!rec) mic.disabled = true;
-      mic.addEventListener("click", () => {
-        if (listening) { finishListening(); mic.textContent = "Transcrevendo..."; return; }
-        mic.setAttribute("aria-pressed", "true"); mic.textContent = "Ouvindo... (" + TAP + " para parar)"; said.textContent = "Fale agora.";
-        listenOnce((finalText) => { mic.setAttribute("aria-pressed", "false"); mic.textContent = "🎤 Falar"; said.textContent = ""; grade(finalText); }, (txt) => { said.textContent = txt + "…"; });
-      });
-      inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && inp.value.trim()) grade(inp.value.trim()); });
-      actions.append(hearBtn(ex.answer), mic, checkBtn(() => { if (inp.value.trim()) grade(inp.value.trim()); }));
+      // graded on the sounds of the recording (phonemes, stress, intelligibility), not on text similarity
+      box.append(el("div", "text", ex.answer));
+      box.append(pronCard(ex.answer, { eager: true, onAssess: (d) => { if (d && d.ok && d.score != null) finish(d.score >= 80 ? 1 : d.score >= 60 ? 0.5 : 0, el("div", "said", "Nota de pronúncia: " + d.score + " de 100")); } }));
+      box.append(el("div", "said", canRecord ? "Ouça, leia a pronúncia e toque em 🎤 Praticar para gravar. Pode repetir quantas vezes quiser." : "Este navegador não dá acesso ao microfone. Use Chrome, Edge ou Safari atualizados para praticar."));
+      if (!canRecord) { const skip = el("button", "btn", "Pular"); skip.addEventListener("click", () => finish(0)); actions.append(skip); }
       setTimeout(() => { if (!listening) speak(ex.answer); }, 300);
     } else if (ex.type === "translate") {
       box.append(el("div", "text", ex.text || ""));

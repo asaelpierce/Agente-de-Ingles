@@ -23,8 +23,8 @@ module.exports = async (req, res) => {
     const payload = { model, voice: process.env.OPENAI_TTS_VOICE || "nova", input: text, response_format: "mp3" };
     if (model.startsWith("gpt-4o")) {
       // gpt-4o-mini-tts takes natural-language instructions (and ignores "speed"); tts-1 takes "speed" only
-      const pace = speed < 0.9 ? "Speak slowly, with clear pauses between phrases." : speed > 1.02 ? "Speak at a brisk, natural pace." : "Speak at a calm, natural pace.";
-      payload.instructions = "You are a friendly American English teacher. Clear consonants, no mumbling. " + pace;
+      const pace = speed < 0.9 ? "Speak slowly so a beginner can follow, but keep completely natural American pronunciation: same sounds, same stress and the same linking between words as at normal speed. Do not separate syllables, do not over-articulate, and do not add pauses inside phrases." : speed > 1.02 ? "Speak at a brisk, natural pace." : "Speak at a calm, natural pace.";
+      payload.instructions = "Native General American English speaker, friendly teacher. Natural, clear pronunciation, standard connected speech. " + pace;
     } else {
       payload.speed = speed;
     }
